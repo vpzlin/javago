@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="impala" />
+        <module name="common" />
+        <module name="hbase" />
+        <module name="elasticsearch7" />
+        <module name="hive" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="common" target="1.5" />
+      <module name="elasticsearch7" target="1.5" />
+      <module name="hbase" target="1.5" />
+      <module name="hive" target="1.5" />
+      <module name="impala" target="1.5" />
+      <module name="javago" target="1.5" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
