@@ -1,4 +1,4 @@
-package org.vpzlin.javago.util.encryptor;
+package org.vpzlin.javago.util.encrypt;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
