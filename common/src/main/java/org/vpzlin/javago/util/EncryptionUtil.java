@@ -2,7 +2,10 @@ package org.vpzlin.javago.util;
 
 import java.security.MessageDigest;
 
-public class EncryptUtil {
+public class EncryptionUtil {
+    /**
+     * MD5
+     */
     public static String md5EncodeAscII(String gbkString){
         return encrypt(gbkString, "MD5", "ASCII");
     }
@@ -15,6 +18,39 @@ public class EncryptUtil {
         return encrypt(gbkString, "MD5", "UTF-8");
     }
 
+    /**
+     * SHA-1
+     */
+    public static String sha1EncodeAscII(String gbkString){
+        return encrypt(gbkString, "SHA-1", "ASCII");
+    }
+
+    public static String sha1EncodeGBK(String gbkString){
+        return encrypt(gbkString, "SHA-1", "GBK");
+    }
+
+    public static String sha1EncodeUTF8(String gbkString){
+        return encrypt(gbkString, "SHA-1", "UTF-8");
+    }
+
+    /**
+     * SHA-224
+     */
+    public static String sha224EncodeAscII(String gbkString){
+        return encrypt(gbkString, "SHA-224", "ASCII");
+    }
+
+    public static String sha224EncodeGBK(String gbkString){
+        return encrypt(gbkString, "SHA-224", "GBK");
+    }
+
+    public static String sha224EncodeUTF8(String gbkString){
+        return encrypt(gbkString, "SHA-224", "UTF-8");
+    }
+
+    /**
+     * SHA-256
+     */
     public static String sha256EncodeAscII(String gbkString){
         return encrypt(gbkString, "SHA-256", "ASCII");
     }
@@ -25,6 +61,36 @@ public class EncryptUtil {
 
     public static String sha256EncodeUTF8(String gbkString){
         return encrypt(gbkString, "SHA-256", "UTF-8");
+    }
+
+    /**
+     * SHA-384
+     */
+    public static String sha384EncodeAscII(String gbkString){
+        return encrypt(gbkString, "SHA-384", "ASCII");
+    }
+
+    public static String sha384EncodeGBK(String gbkString){
+        return encrypt(gbkString, "SHA-384", "GBK");
+    }
+
+    public static String sha384EncodeUTF8(String gbkString){
+        return encrypt(gbkString, "SHA-384", "UTF-8");
+    }
+
+    /**
+     * SHA-512
+     */
+    public static String sha512EncodeAscII(String gbkString){
+        return encrypt(gbkString, "SHA-512", "ASCII");
+    }
+
+    public static String sha512EncodeGBK(String gbkString){
+        return encrypt(gbkString, "SHA-512", "GBK");
+    }
+
+    public static String sha512EncodeUTF8(String gbkString){
+        return encrypt(gbkString, "SHA-512", "UTF-8");
     }
 
 
