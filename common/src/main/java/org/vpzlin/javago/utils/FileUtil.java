@@ -4,21 +4,21 @@ import java.io.File;
 
 /**
  * return codes of functions:
- *     0: success
- *     1: path doesn't exist
- *     2: path isn't a file
- *     3: path isn't a directory
- *     4: path isn't hidden
- *     5: path can't read
- *     6: path can't write
- *     7: path can't execute
- *     8: path can't delete
+ *           0: success
+ *     1010101: path doesn't exist
+ *     1010102: path isn't a file
+ *     1010103: path isn't a directory
+ *     1010104: path isn't hidden
+ *     1010105: path can't be read
+ *     1010106: path can't be wrote
+ *     1010107: path can't be executed
+ *     1010108: path can't be deleted
  */
-public class FileUtil {
+public class FileUtil extends UtilCode{
     public static int exists(String path){
         File file = new File(path);
         if(!file.exists()){
-            return 1;
+            return 1010101;
         }
         return 0;
     }
@@ -26,10 +26,10 @@ public class FileUtil {
     public static int isFile(String path){
         File file = new File(path);
         if(!file.exists()){
-            return 1;
+            return 1010101;
         }
         if(!file.isFile()){
-            return 2;
+            return 1010102;
         }
         return 0;
     }
@@ -37,10 +37,10 @@ public class FileUtil {
     public static int isDirectory(String path){
         File file = new File(path);
         if(!file.exists()){
-            return 1;
+            return 1010101;
         }
         if(!file.isDirectory()){
-            return 3;
+            return 1010103;
         }
         return 0;
     }
@@ -48,25 +48,25 @@ public class FileUtil {
     public static int isHidden(String path){
         File file = new File(path);
         if(!file.exists()){
-            return 1;
+            return 1010101;
         }
         if(!file.isHidden()){
-            return 4;
+            return 1010104;
         }
         return 0;
     }
 
     /**
      * return 0 if path like "/opt/data/a.txt";
-     * return 4 if path like "data/a.txt" or like "a.txt".
+     * return 1010104 if path like "data/a.txt" or like "a.txt".
      */
     public static int isAbsolute(String path){
         File file = new File(path);
         if(!file.exists()){
-            return 1;
+            return 1010101;
         }
         if(!file.isAbsolute()){
-            return 4;
+            return 1010104;
         }
         return 0;
     }
@@ -74,10 +74,10 @@ public class FileUtil {
     public static int canRead(String path){
         File file = new File(path);
         if(!file.exists()){
-            return 1;
+            return 1010101;
         }
         if(!file.canRead()){
-            return 5;
+            return 1010105;
         }
         return 0;
     }
@@ -85,10 +85,10 @@ public class FileUtil {
     public static int canWrite(String path){
         File file = new File(path);
         if(!file.exists()){
-            return 1;
+            return 1010101;
         }
         if(!file.canWrite()){
-            return 6;
+            return 1010106;
         }
         return 0;
     }
@@ -96,10 +96,10 @@ public class FileUtil {
     public static int canExecute(String path){
         File file = new File(path);
         if(!file.exists()){
-            return 1;
+            return 1010101;
         }
         if(!file.canExecute()){
-            return 7;
+            return 1010107;
         }
         return 0;
     }
@@ -107,10 +107,10 @@ public class FileUtil {
     public static int delete(String path){
         File file = new File(path);
         if(!file.exists()){
-            return 1;
+            return 1010101;
         }
         if(!file.delete()){
-            return 8;
+            return 1010108;
         }
         return 0;
     }
@@ -118,13 +118,13 @@ public class FileUtil {
     public static int deleteFile(String path){
         File file = new File(path);
         if(!file.exists()){
-            return 1;
+            return 1010101;
         }
         if(!file.isFile()){
-            return 2;
+            return 1010102;
         }
         if(!file.delete()){
-            return 8;
+            return 1010108;
         }
         return 0;
     }
@@ -132,13 +132,13 @@ public class FileUtil {
     public static int deleteDirectory(String path){
         File file = new File(path);
         if(!file.exists()){
-            return 1;
+            return 1010101;
         }
         if(!file.isDirectory()){
-            return 3;
+            return 1010103;
         }
         if(!file.delete()){
-            return 8;
+            return 1010108;
         }
         return 0;
     }

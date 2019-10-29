@@ -9,13 +9,13 @@
         <module name="impala" />
         <module name="common" />
         <module name="hbase" />
-        <module name="elasticsearch7" />
+        <module name="elasticsearch" />
         <module name="hive" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="common" target="8" />
-      <module name="elasticsearch7" target="8" />
+      <module name="elasticsearch" target="8" />
       <module name="hbase" target="8" />
       <module name="hive" target="8" />
       <module name="impala" target="8" />

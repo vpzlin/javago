@@ -10,7 +10,7 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>common</module>
-        <module>elasticsearch7</module>
+        <module>elasticsearch</module>
         <module>impala</module>
         <module>hbase</module>
         <module>hive</module>
