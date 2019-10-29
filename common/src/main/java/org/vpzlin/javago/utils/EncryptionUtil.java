@@ -1,4 +1,4 @@
-package org.vpzlin.javago.util;
+package org.vpzlin.javago.utils;
 
 import java.security.MessageDigest;
 import javax.crypto.Mac;
@@ -96,6 +96,21 @@ public class EncryptionUtil {
     }
 
     /**
+     * HMACMD5
+     */
+    public static String hmacMd5EncodeAscII(String text, String key){
+        return encrypt(text, key, "HmacMD5", "ASCII");
+    }
+
+    public static String hmacMd5EncodeGBK(String text, String key){
+        return encrypt(text, key, "HmacMD5", "GBK");
+    }
+
+    public static String hmacMd5EncodeUTF8(String text, String key){
+        return encrypt(text, key, "HmacMD5", "UTF-8");
+    }
+
+    /**
      * HMACSHA-1
      */
     public static String hmacSha1EncodeAscII(String text, String key){
@@ -108,6 +123,66 @@ public class EncryptionUtil {
 
     public static String hmacSha1EncodeUTF8(String text, String key){
         return encrypt(text, key, "HmacSHA1", "UTF-8");
+    }
+
+    /**
+     * HMACSHA-224
+     */
+    public static String hmacSha224EncodeAscII(String text, String key){
+        return encrypt(text, key, "HmacSHA224", "ASCII");
+    }
+
+    public static String hmacSha224EncodeGBK(String text, String key){
+        return encrypt(text, key, "HmacSHA224", "GBK");
+    }
+
+    public static String hmacSha224EncodeUTF8(String text, String key){
+        return encrypt(text, key, "HmacSHA224", "UTF-8");
+    }
+
+    /**
+     * HMACSHA-256
+     */
+    public static String hmacSha256EncodeAscII(String text, String key){
+        return encrypt(text, key, "HmacSHA256", "ASCII");
+    }
+
+    public static String hmacSha256EncodeGBK(String text, String key){
+        return encrypt(text, key, "HmacSHA256", "GBK");
+    }
+
+    public static String hmacSha256EncodeUTF8(String text, String key){
+        return encrypt(text, key, "HmacSHA256", "UTF-8");
+    }
+
+    /**
+     * HMACSHA-256
+     */
+    public static String hmacSha384EncodeAscII(String text, String key){
+        return encrypt(text, key, "HmacSHA384", "ASCII");
+    }
+
+    public static String hmacSha384EncodeGBK(String text, String key){
+        return encrypt(text, key, "HmacSHA384", "GBK");
+    }
+
+    public static String hmacSha384EncodeUTF8(String text, String key){
+        return encrypt(text, key, "HmacSHA384", "UTF-8");
+    }
+
+    /**
+     * HMACSHA-512
+     */
+    public static String hmacSha512EncodeAscII(String text, String key){
+        return encrypt(text, key, "HmacSHA512", "ASCII");
+    }
+
+    public static String hmacSha512EncodeGBK(String text, String key){
+        return encrypt(text, key, "HmacSHA512", "GBK");
+    }
+
+    public static String hmacSha512EncodeUTF8(String text, String key){
+        return encrypt(text, key, "HmacSHA512", "UTF-8");
     }
 
     /**
@@ -146,6 +221,7 @@ public class EncryptionUtil {
     private static String encrypt(String text, String encryptionType, String charSet){
         MessageDigest messageDigest;
         String encodeStr;
+
         try {
             messageDigest = MessageDigest.getInstance(encryptionType);
             messageDigest.update(text.getBytes(charSet));
@@ -174,6 +250,7 @@ public class EncryptionUtil {
             }
             stringBuffer.append(temp);
         }
+
         return stringBuffer.toString();
     }
 }
