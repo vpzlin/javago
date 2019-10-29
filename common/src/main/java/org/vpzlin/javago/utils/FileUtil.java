@@ -1,20 +1,32 @@
 package org.vpzlin.javago.utils;
 
 import java.io.File;
+import java.util.HashMap;
 
-/**
- * return codes of functions:
- *           0: success
- *     1010101: path doesn't exist
- *     1010102: path isn't a file
- *     1010103: path isn't a directory
- *     1010104: path isn't hidden
- *     1010105: path can't be read
- *     1010106: path can't be wrote
- *     1010107: path can't be executed
- *     1010108: path can't be deleted
- */
-public class FileUtil extends UtilCode{
+public class FileUtil{
+    protected static HashMap<Integer, String> codeMap = new HashMap<Integer, String>();
+
+    public static String getInfoByCode(int code){
+        if(!codeMap.containsKey(code)){
+            return null;
+        }
+        return codeMap.get(code);
+    }
+
+    /**
+     * init codes map
+     */
+    static {
+        codeMap.put(10101001, "Path doesn't exist.");
+        codeMap.put(10101002, "Path isn't a file.");
+        codeMap.put(10101003, "Path isn't a directory.");
+        codeMap.put(10101004, "Path isn't hidden.");
+        codeMap.put(10101005, "Path can't be read.");
+        codeMap.put(10101006, "Path can't be wrote.");
+        codeMap.put(10101007, "Path can't be executed.");
+        codeMap.put(10101008, "Path can't be deleted.");
+    }
+
     public static int exists(String path){
         File file = new File(path);
         if(!file.exists()){
