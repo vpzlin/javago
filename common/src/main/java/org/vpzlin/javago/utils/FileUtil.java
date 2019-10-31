@@ -1,6 +1,9 @@
 package org.vpzlin.javago.utils;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 public class FileUtil{
     public static Result exists(String path){
@@ -240,5 +243,132 @@ public class FileUtil{
         else {
             return Result.getResult(false, null, String.format("Failed to mkdirs [%s].", path));
         }
+    }
+
+    /**
+     * @return Result.data is a String object
+     */
+    public static Result getFileName(String path){
+        File file = new File(path);
+        if(file.exists()){
+            return Result.getResult(false, null, String.format("Failed to get file name of path [%s], it doesn't exist.", path));
+        }
+
+        return Result.getResult(true, file.getName(), String.format("Got file name [%s] of path [%s].", file.getName(), path));
+    }
+
+    /**
+     * @return Result.data is a String object
+     */
+    public static Result getParentPath(String path){
+        File file = new File(path);
+        if(file.exists()){
+            return Result.getResult(false, null, String.format("Failed to get parent path of path [%s], it doesn't exist.", path));
+        }
+        return Result.getResult(true, file.getParent(), String.format("Got parent path [%s] of path [%s].", file.getParent(), path));
+    }
+
+    /**
+     * @return Result.data is a List object
+     */
+    public static Result list(String path){
+        File file = new File(path);
+        if(file.exists()){
+            return Result.getResult(false, null, String.format("Failed to get list of path [%s], it doesn't exist.", path));
+        }
+
+        String[] argsList = file.list();
+        List<String> list;
+        if(argsList != null){
+            list = Arrays.asList(argsList);
+        }
+        else {
+            list = new LinkedList<>();
+        }
+        return Result.getResult(true, list, String.format("Got list of path [%s].", path));
+    }
+
+    /**
+     * @return Result.data is a List object
+     */
+    public static Result listFiles(String path){
+        File file = new File(path);
+        if(file.exists()){
+            return Result.getResult(false, null, String.format("Failed to get file list of path [%s], it doesn't exist.", path));
+        }
+
+        String[] argsList = file.list();
+        List<String> list;
+        if(argsList != null){
+            list = Arrays.asList(argsList);
+        }
+        else {
+            list = new LinkedList<>();
+        }
+
+        // delete sub which is not file
+        for(String subFilePath: list){
+            File subFile = new File(subFilePath);
+            if(!subFile.isFile()){
+                list.remove(subFilePath);
+            }
+        }
+        return Result.getResult(true, list, String.format("Got file list of path [%s].", path));
+    }
+
+    /**
+     * @return Result.data is a List object
+     */
+    public static Result listDirectories(String path){
+        File file = new File(path);
+        if(file.exists()){
+            return Result.getResult(false, null, String.format("Failed to get directories list of path [%s], it doesn't exist.", path));
+        }
+
+        String[] argsList = file.list();
+        List<String> list;
+        if(argsList != null){
+            list = Arrays.asList(argsList);
+        }
+        else {
+            list = new LinkedList<>();
+        }
+
+        // delete object which is not directory
+        for(String subFilePath: list){
+            File subFile = new File(subFilePath);
+            if(!subFile.isFile()){
+                list.remove(subFilePath);
+            }
+        }
+        return Result.getResult(true, list, String.format("Got directories list of path [%s].", path));
+    }
+
+    /**
+     * @return Result.data is a List object
+     */
+    public static Result listHiddens(String path){
+        File file = new File(path);
+        if(file.exists()){
+            return Result.getResult(false, null, String.format("Failed to get hidden list of path [%s], it doesn't exist.", path));
+        }
+
+        String[] argsList = file.list();
+        List<String> list;
+        if(argsList != null){
+            list = Arrays.asList(argsList);
+        }
+        else {
+            list = new LinkedList<>();
+        }
+
+        // delete object which is not hidden
+        for(String subFilePath: list){
+            File subFile = new File(subFilePath);
+            if(!subFile.isFile()){
+                list.remove(subFilePath);
+            }
+        }
+        return Result.getResult(true, list, String.format("Got hidden list of path [%s].", path));
     }
 }
