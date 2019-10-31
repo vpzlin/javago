@@ -1,6 +1,6 @@
 package org.vpzlin.javago.utils;
 
-import java.io.File;
+import java.io.*;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -248,21 +248,9 @@ public class FileUtil{
     /**
      * @return Result.data is a String object
      */
-    public static Result getFileName(String path){
-        File file = new File(path);
-        if(file.exists()){
-            return Result.getResult(false, null, String.format("Failed to get file name of path [%s], it doesn't exist.", path));
-        }
-
-        return Result.getResult(true, file.getName(), String.format("Got file name [%s] of path [%s].", file.getName(), path));
-    }
-
-    /**
-     * @return Result.data is a String object
-     */
     public static Result getParentPath(String path){
         File file = new File(path);
-        if(file.exists()){
+        if(!file.exists()){
             return Result.getResult(false, null, String.format("Failed to get parent path of path [%s], it doesn't exist.", path));
         }
         return Result.getResult(true, file.getParent(), String.format("Got parent path [%s] of path [%s].", file.getParent(), path));
@@ -273,7 +261,7 @@ public class FileUtil{
      */
     public static Result list(String path){
         File file = new File(path);
-        if(file.exists()){
+        if(!file.exists()){
             return Result.getResult(false, null, String.format("Failed to get list of path [%s], it doesn't exist.", path));
         }
 
@@ -293,7 +281,7 @@ public class FileUtil{
      */
     public static Result listFiles(String path){
         File file = new File(path);
-        if(file.exists()){
+        if(!file.exists()){
             return Result.getResult(false, null, String.format("Failed to get file list of path [%s], it doesn't exist.", path));
         }
 
@@ -321,7 +309,7 @@ public class FileUtil{
      */
     public static Result listDirectories(String path){
         File file = new File(path);
-        if(file.exists()){
+        if(!file.exists()){
             return Result.getResult(false, null, String.format("Failed to get directories list of path [%s], it doesn't exist.", path));
         }
 
@@ -349,7 +337,7 @@ public class FileUtil{
      */
     public static Result listHiddens(String path){
         File file = new File(path);
-        if(file.exists()){
+        if(!file.exists()){
             return Result.getResult(false, null, String.format("Failed to get hidden list of path [%s], it doesn't exist.", path));
         }
 
@@ -370,5 +358,179 @@ public class FileUtil{
             }
         }
         return Result.getResult(true, list, String.format("Got hidden list of path [%s].", path));
+    }
+
+    /**
+     * @return Result.data is a String object
+     */
+    public static Result getFileName(String path){
+        File file = new File(path);
+        if(!file.exists()){
+            return Result.getResult(false, null, String.format("Failed to get file name of path [%s], it doesn't exist.", path));
+        }
+
+        return Result.getResult(true, file.getName(), String.format("Got file name [%s] of path [%s].", file.getName(), path));
+    }
+
+    /**
+     * @return Result.data is a String object
+     */
+    public static Result getFileExtension(String path){
+        File file = new File(path);
+        if(!file.exists()){
+            return Result.getResult(false, null, String.format("Failed to get file extension of path [%s], it doesn't exist.", path));
+        }
+        String fileName = file.getName();
+        String fileExtension = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf(".") + 1).trim() : "";
+        if(fileExtension.length() == 0){
+            return Result.getResult(false, null, String.format("Failed to get file extension of path [%s], it hasn't a extension.", path));
+        }
+        else {
+            return Result.getResult(true, fileExtension, String.format("Got file extension [%s] of path [%s].", fileExtension, path));
+        }
+    }
+
+    /**
+     * @return Result.data is a String object
+     */
+    public static Result getFileNameWithoutExtension(String path){
+        File file = new File(path);
+        if(!file.exists()){
+            return Result.getResult(false, null, String.format("Failed to get file name without extension of path [%s], it doesn't exist.", path));
+        }
+        String fileName = file.getName();
+        int idxDot = fileName.lastIndexOf(".");
+        if(idxDot > 0 && fileName.substring(0, idxDot).trim().length() != 0){
+            fileName = fileName.substring(0, idxDot);
+        }
+        return Result.getResult(true, fileName, String.format("Got file name without extension [%s] of path [%s].", fileName, path));
+    }
+
+    /**
+     * @return Result.data is a String object
+     */
+    public static Result getAbsolutePath(String path){
+        File file = new File(path);
+        if(!file.exists()){
+            return Result.getResult(false, null, String.format("Failed to get absolute path of path [%s], it doesn't exist.", path));
+        }
+
+        return Result.getResult(true, file.getAbsolutePath(), String.format("Got absolute path [%s] of path [%s].", file.getAbsolutePath(), path));
+    }
+
+    /**
+     * @return Result.data is a String object
+     */
+    public static Result getFullPath(String path){
+        File file = new File(path);
+        if(!file.exists()){
+            return Result.getResult(false, null, String.format("Failed to get full path of path [%s], it doesn't exist.", path));
+        }
+
+        return Result.getResult(true, file.getAbsolutePath(), String.format("Got full path [%s] of path [%s].", file.getAbsolutePath(), path));
+    }
+
+    public static Result rename(String path, String newFileName){
+        File file = new File(path);
+        if(!file.exists()){
+            return Result.getResult(false, null, String.format("Failed to rename to [%s], the source path [%s] doesn't exist.", newFileName, path));
+        }
+
+        String parentPath = file.getParent();
+        String newPath;
+        if(parentPath != null && parentPath.trim().length() > 0){
+            newPath = file.getParent() + File.separator + newFileName;
+        }
+        else {
+            newPath = newFileName;
+        }
+        File newFile = new File(newPath);
+        if(file.exists()){
+            return Result.getResult(false, null, String.format("Failed to rename to [%s], the rename target [%s] already exists.", newFileName, newPath));
+        }
+
+        if(file.renameTo(newFile)){
+            return Result.getResult(true, null, String.format("Renamed to [%s], the rename target is [%s].", newFileName, newPath));
+        }
+        else{
+            return Result.getResult(false, null, String.format("Failed to rename to [%s], the rename source is [%s].", newFileName, path));
+        }
+    }
+
+    public static Result move(String sourcePath, String targetPath){
+        File sourceFile = new File(sourcePath);
+        if(!sourceFile.exists()){
+            return Result.getResult(false, null, String.format("Failed to move source [%s] to target [%s], the source doesn't exist.", sourcePath, targetPath));
+        }
+
+        File targetFile = new File(targetPath);
+        if(targetFile.exists()){
+            return Result.getResult(false, null, String.format("Failed to move source [%s] to target [%s], the target already exists.", sourcePath, targetPath));
+        }
+
+        if(sourceFile.renameTo(targetFile)){
+            return Result.getResult(true, null, String.format("Moved source [%s] to target [%s].", sourcePath, targetPath));
+        }
+        else {
+            return Result.getResult(false, null, String.format("Failed to move source [%s] to target [%s].", sourcePath, targetPath));
+        }
+    }
+
+    public static Result copy(String sourcePath, String targetPath){
+        File sourceFile = new File(sourcePath);
+        if(!sourceFile.exists()){
+            return Result.getResult(false, null, String.format("Failed to copy source [%s] to target [%s], the source doesn't exist.", sourcePath, targetPath));
+        }
+
+        File targetFile = new File(targetPath);
+        if(targetFile.exists()){
+            return Result.getResult(false, null, String.format("Failed to copy source [%s] to target [%s], the target already exists.", sourcePath, targetPath));
+        }
+
+        try {
+            FileInputStream fileInputStream = new FileInputStream(sourceFile);
+            FileOutputStream fileOutputStream = new FileOutputStream(targetFile);
+            byte[] bytes = new byte[1024];
+            int i = 0;
+            while ((i = fileInputStream.read(bytes)) != -1) {
+                fileOutputStream.write(bytes, 0, i);
+            }
+            fileInputStream.close();
+            fileOutputStream.close();
+        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
+            return Result.getResult(false, null, String.format("Failed to copy source [%s] to target [%s], more info = [%s].", sourcePath, targetPath, e.getMessage()));
+        }
+
+        return Result.getResult(true, null, String.format("Copied source [%s] to target [%s].", sourcePath, targetPath));
+    }
+
+    public static Result appendText(String path, String text){
+        return null;
+    }
+
+    public static Result writeText(String path, String text, boolean overwrite){
+        return null;
+    }
+
+    /**
+     * @return Result.data is a LinkedList object
+     */
+    public static Result readTextLine(String path, int startLine, int endLine){
+        return null;
+    }
+
+    /**
+     * @return Result.data is a LinkedList object
+     */
+    public static Result readText(String path){
+        return null;
+    }
+
+    /**
+     * @return Result.data is a byte[] object
+     */
+    public static Result readBytes(String path){
+        return null;
     }
 }
