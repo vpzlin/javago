@@ -514,16 +514,54 @@ public class FileUtil{
     }
 
     /**
-     * @return Result.data is a LinkedList object
+     * @return Result.data is a String object
      */
-    public static Result readTextLine(String path, int startLine, int endLine){
+    public static Result readText(String path){
         return null;
     }
 
     /**
-     * @return Result.data is a LinkedList object
+     * get text by index range of bytes
+     * @param path the file path
+     * @param idxBeginByte the finger point of begin byte index, the first char's index is [1]
+     * @param idxEndByte the finger point of end byte index, this must be large to the parameter [idxBeginByte]
+     * @return Result.data is a String object
      */
-    public static Result readText(String path){
+    public static Result readText(String path, int idxBeginByte, int idxEndByte){
+        File file = new File(path);
+        if(!file.exists()){
+            return Result.getResult(false, null, String.format("Failed to read random text from [%s], it doesn't exist.", path));
+        }
+        if(!file.isFile()){
+            return Result.getResult(false, null, String.format("Failed to read random text from [%s], it isn't a file.", path));
+        }
+
+        if(idxBeginByte >= idxEndByte){
+            return Result.getResult(false, null, String.format("Failed to read text from file [%s], the begin byte index [%d] must be less than the end byte index [%d].", path, idxBeginByte, idxEndByte));
+        }
+
+        try {
+            RandomAccessFile randomAccessFile = new RandomAccessFile(path, "r");
+            byte[] bytes = new byte[idxEndByte - idxBeginByte];
+
+            randomAccessFile.seek(idxBeginByte);
+            randomAccessFile.read(bytes);
+            randomAccessFile.close();
+
+            String textRead = new String(bytes);
+            return Result.getResult(true, textRead, String.format("The random text read from file [%s] is [%s].", path, textRead));
+        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
+            return Result.getResult(false, null, String.format("Failed to read random text from file [%s], more info = [%s].", path, e.getMessage()));
+        }
+
+        return null;
+    }
+
+    /**
+     * @return Result.data is a String object
+     */
+    public static Result readTextLines(String path, int beginLine, int endLine){
         return null;
     }
 
