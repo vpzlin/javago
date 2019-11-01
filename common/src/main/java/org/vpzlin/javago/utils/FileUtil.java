@@ -527,7 +527,7 @@ public class FileUtil{
      * @param idxEndByte the finger point of end byte index, this must be large to the parameter [idxBeginByte]
      * @return Result.data is a String object
      */
-    public static Result readText(String path, int idxBeginByte, int idxEndByte){
+    public static Result readText(String path, int idxBeginByte, int idxEndByte, String charsetName){
         File file = new File(path);
         if(!file.exists()){
             return Result.getResult(false, null, String.format("Failed to read random text from [%s], it doesn't exist.", path));
@@ -540,22 +540,40 @@ public class FileUtil{
             return Result.getResult(false, null, String.format("Failed to read text from file [%s], the begin byte index [%d] must be less than the end byte index [%d].", path, idxBeginByte, idxEndByte));
         }
 
+        if(charsetName == null || charsetName.trim().length() == 0){
+            return Result.getResult(false, null, String.format("Failed to read random text from [%s], the parameter charsetName must not be null or empty.", path));
+        }
+
         try {
             RandomAccessFile randomAccessFile = new RandomAccessFile(path, "r");
-            byte[] bytes = new byte[idxEndByte - idxBeginByte];
-
+            int size = (long)(idxEndByte - idxBeginByte) > randomAccessFile.length() ? (int)randomAccessFile.length() : (idxEndByte - idxBeginByte);
+            byte[] bytes = new byte[size];
             randomAccessFile.seek(idxBeginByte);
             randomAccessFile.read(bytes);
             randomAccessFile.close();
-
-            String textRead = new String(bytes);
+            String textRead = new String(bytes, charsetName);
             return Result.getResult(true, textRead, String.format("The random text read from file [%s] is [%s].", path, textRead));
         } catch (FileNotFoundException e) {
+            return Result.getResult(false, null, String.format("Failed to read random text from file [%s], it doesn't exist.", path));
         } catch (IOException e) {
             return Result.getResult(false, null, String.format("Failed to read random text from file [%s], more info = [%s].", path, e.getMessage()));
         }
+    }
 
-        return null;
+    public static Result readTextUtf8(String path, int idxBeginByte, int idxEndByte){
+        return readText(path, idxBeginByte, idxEndByte, "UTF8");
+    }
+
+    public static Result readTextAscII(String path, int idxBeginByte, int idxEndByte){
+        return readText(path, idxBeginByte, idxEndByte, "ASCII");
+    }
+
+    public static Result readTextGb2312(String path, int idxBeginByte, int idxEndByte){
+        return readText(path, idxBeginByte, idxEndByte, "GB2312");
+    }
+
+    public static Result readTextGbk(String path, int idxBeginByte, int idxEndByte){
+        return readText(path, idxBeginByte, idxEndByte, "GBK");
     }
 
     /**
