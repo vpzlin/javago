@@ -564,10 +564,6 @@ public class FileUtil{
         return readText(path, idxBeginByte, idxEndByte, "UTF8");
     }
 
-    public static Result readTextAscII(String path, int idxBeginByte, int idxEndByte){
-        return readText(path, idxBeginByte, idxEndByte, "ASCII");
-    }
-
     public static Result readTextGb2312(String path, int idxBeginByte, int idxEndByte){
         return readText(path, idxBeginByte, idxEndByte, "GB2312");
     }
