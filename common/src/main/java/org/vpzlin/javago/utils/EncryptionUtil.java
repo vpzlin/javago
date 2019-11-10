@@ -8,10 +8,6 @@ public class EncryptionUtil {
     /**
      * MD5
      */
-    public static String md5EncodeAscII(String text){
-        return encrypt(text, "MD5", "ASCII");
-    }
-
     public static String md5EncodeGBK(String text){
         return encrypt(text, "MD5", "GBK");
     }
@@ -23,10 +19,6 @@ public class EncryptionUtil {
     /**
      * SHA-1
      */
-    public static String sha1EncodeAscII(String text){
-        return encrypt(text, "SHA-1", "ASCII");
-    }
-
     public static String sha1EncodeGBK(String text){
         return encrypt(text, "SHA-1", "GBK");
     }
@@ -38,10 +30,6 @@ public class EncryptionUtil {
     /**
      * SHA-224
      */
-    public static String sha224EncodeAscII(String text){
-        return encrypt(text, "SHA-224", "ASCII");
-    }
-
     public static String sha224EncodeGBK(String text){
         return encrypt(text, "SHA-224", "GBK");
     }
@@ -53,10 +41,6 @@ public class EncryptionUtil {
     /**
      * SHA-256
      */
-    public static String sha256EncodeAscII(String text){
-        return encrypt(text, "SHA-256", "ASCII");
-    }
-
     public static String sha256EncodeGBK(String text){
         return encrypt(text, "SHA-256", "GBK");
     }
@@ -68,10 +52,6 @@ public class EncryptionUtil {
     /**
      * SHA-384
      */
-    public static String sha384EncodeAscII(String text){
-        return encrypt(text, "SHA-384", "ASCII");
-    }
-
     public static String sha384EncodeGBK(String text){
         return encrypt(text, "SHA-384", "GBK");
     }
@@ -83,10 +63,6 @@ public class EncryptionUtil {
     /**
      * SHA-512
      */
-    public static String sha512EncodeAscII(String text){
-        return encrypt(text, "SHA-512", "ASCII");
-    }
-
     public static String sha512EncodeGBK(String text){
         return encrypt(text, "SHA-512", "GBK");
     }
@@ -98,10 +74,6 @@ public class EncryptionUtil {
     /**
      * HMACMD5
      */
-    public static String hmacMd5EncodeAscII(String text, String key){
-        return encrypt(text, key, "HmacMD5", "ASCII");
-    }
-
     public static String hmacMd5EncodeGBK(String text, String key){
         return encrypt(text, key, "HmacMD5", "GBK");
     }
@@ -113,10 +85,6 @@ public class EncryptionUtil {
     /**
      * HMACSHA-1
      */
-    public static String hmacSha1EncodeAscII(String text, String key){
-        return encrypt(text, key, "HmacSHA1", "ASCII");
-    }
-
     public static String hmacSha1EncodeGBK(String text, String key){
         return encrypt(text, key, "HmacSHA1", "GBK");
     }
@@ -128,10 +96,6 @@ public class EncryptionUtil {
     /**
      * HMACSHA-224
      */
-    public static String hmacSha224EncodeAscII(String text, String key){
-        return encrypt(text, key, "HmacSHA224", "ASCII");
-    }
-
     public static String hmacSha224EncodeGBK(String text, String key){
         return encrypt(text, key, "HmacSHA224", "GBK");
     }
@@ -143,10 +107,6 @@ public class EncryptionUtil {
     /**
      * HMACSHA-256
      */
-    public static String hmacSha256EncodeAscII(String text, String key){
-        return encrypt(text, key, "HmacSHA256", "ASCII");
-    }
-
     public static String hmacSha256EncodeGBK(String text, String key){
         return encrypt(text, key, "HmacSHA256", "GBK");
     }
@@ -158,10 +118,6 @@ public class EncryptionUtil {
     /**
      * HMACSHA-256
      */
-    public static String hmacSha384EncodeAscII(String text, String key){
-        return encrypt(text, key, "HmacSHA384", "ASCII");
-    }
-
     public static String hmacSha384EncodeGBK(String text, String key){
         return encrypt(text, key, "HmacSHA384", "GBK");
     }
@@ -173,10 +129,6 @@ public class EncryptionUtil {
     /**
      * HMACSHA-512
      */
-    public static String hmacSha512EncodeAscII(String text, String key){
-        return encrypt(text, key, "HmacSHA512", "ASCII");
-    }
-
     public static String hmacSha512EncodeGBK(String text, String key){
         return encrypt(text, key, "HmacSHA512", "GBK");
     }
