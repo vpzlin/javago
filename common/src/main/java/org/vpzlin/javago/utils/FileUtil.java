@@ -9,10 +9,10 @@ public class FileUtil{
     public static Result exists(String path){
         File file = new File(path);
         if(file.exists()){
-            return Result.getResult(true, null, String.format("Path [%s] exists.", path));
+            return Result.getResult(true, true, String.format("Path [%s] exists.", path));
         }
         else {
-            return Result.getResult(false, null, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
         }
     }
 
@@ -20,42 +20,42 @@ public class FileUtil{
 
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, null, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.isFile()){
-            return Result.getResult(true, null, String.format("Path [%s] is a file.", path));
+            return Result.getResult(true, true, String.format("Path [%s] is a file.", path));
         }
         else{
-            return Result.getResult(false, null, String.format("Path [%s] isn't a file.", path));
+            return Result.getResult(false, true, String.format("Path [%s] isn't a file.", path));
         }
     }
 
     public static Result isDirectory(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, null, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.isDirectory()){
-            return Result.getResult(true, null, String.format("Path [%s] is a directory.", path));
+            return Result.getResult(true, true, String.format("Path [%s] is a directory.", path));
         }
         else{
-            return Result.getResult(false, null, String.format("Path [%s] isn't a directory.", path));
+            return Result.getResult(false, false, String.format("Path [%s] isn't a directory.", path));
         }
     }
 
     public static Result isHidden(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, null, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.isHidden()){
-            return Result.getResult(true, null, String.format("Path [%s] is hidden.", path));
+            return Result.getResult(true, true, String.format("Path [%s] is hidden.", path));
         }
         else{
-            return Result.getResult(false, null, String.format("Path [%s] isn't hidden.", path));
+            return Result.getResult(false, false, String.format("Path [%s] isn't hidden.", path));
         }
     }
 
@@ -66,56 +66,56 @@ public class FileUtil{
     public static Result isAbsolute(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, null, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.isAbsolute()){
-            return Result.getResult(true, null, String.format("Path [%s] is absolute.", path));
+            return Result.getResult(true, true, String.format("Path [%s] is absolute.", path));
         }
         else{
-            return Result.getResult(false, null, String.format("Path [%s] isn't hidden.", path));
+            return Result.getResult(false, false, String.format("Path [%s] isn't hidden.", path));
         }
     }
 
     public static Result canRead(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, null, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.canRead()){
-            return Result.getResult(true, null, String.format("Path [%s] can be read.", path));
+            return Result.getResult(true, true, String.format("Path [%s] can be read.", path));
         }
         else{
-            return Result.getResult(false, null, String.format("Path [%s] can't be read.", path));
+            return Result.getResult(false, false, String.format("Path [%s] can't be read.", path));
         }
     }
 
     public static Result canWrite(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, null, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.canWrite()){
-            return Result.getResult(true, null, String.format("Path [%s] can be wrote.", path));
+            return Result.getResult(true, true, String.format("Path [%s] can be wrote.", path));
         }
         else{
-            return Result.getResult(false, null, String.format("Path [%s] can't be wrote.", path));
+            return Result.getResult(false, false, String.format("Path [%s] can't be wrote.", path));
         }
     }
 
     public static Result canExecute(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, null, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.canExecute()){
-            return Result.getResult(true, null, String.format("Path [%s] can be executed.", path));
+            return Result.getResult(true, true, String.format("Path [%s] can be executed.", path));
         }
         else{
-            return Result.getResult(false, null, String.format("Path [%s] can't be executed.", path));
+            return Result.getResult(false, false, String.format("Path [%s] can't be executed.", path));
         }
     }
 
@@ -245,6 +245,10 @@ public class FileUtil{
         }
     }
 
+    public static Result mkdirP(String path){
+        return mkdirs(path);
+    }
+
     /**
      * @return Result.data is a String object
      */
@@ -257,12 +261,15 @@ public class FileUtil{
     }
 
     /**
-     * @return Result.data is a List object
+     * @return Result.data is a List<String> object
      */
     public static Result list(String path){
         File file = new File(path);
         if(!file.exists()){
             return Result.getResult(false, null, String.format("Failed to get list of path [%s], it doesn't exist.", path));
+        }
+        if(file.isFile()){
+            return Result.getResult(false, null, String.format("Failed to get list of path [%s], it's a file path.", path));
         }
 
         String[] argsList = file.list();
@@ -277,12 +284,15 @@ public class FileUtil{
     }
 
     /**
-     * @return Result.data is a List object
+     * @return Result.data is a <String> object
      */
     public static Result listFiles(String path){
         File file = new File(path);
         if(!file.exists()){
             return Result.getResult(false, null, String.format("Failed to get file list of path [%s], it doesn't exist.", path));
+        }
+        if(file.isFile()){
+            return Result.getResult(false, null, String.format("Failed to get list of path [%s], it's a file path.", path));
         }
 
         String[] argsList = file.list();
@@ -305,12 +315,15 @@ public class FileUtil{
     }
 
     /**
-     * @return Result.data is a List object
+     * @return Result.data is a List<String> object
      */
     public static Result listDirectories(String path){
         File file = new File(path);
         if(!file.exists()){
             return Result.getResult(false, null, String.format("Failed to get directories list of path [%s], it doesn't exist.", path));
+        }
+        if(file.isFile()){
+            return Result.getResult(false, null, String.format("Failed to get list of path [%s], it's a file path.", path));
         }
 
         String[] argsList = file.list();
@@ -333,12 +346,15 @@ public class FileUtil{
     }
 
     /**
-     * @return Result.data is a List object
+     * @return Result.data is a List<String> object
      */
     public static Result listHiddens(String path){
         File file = new File(path);
         if(!file.exists()){
             return Result.getResult(false, null, String.format("Failed to get hidden list of path [%s], it doesn't exist.", path));
+        }
+        if(file.isFile()){
+            return Result.getResult(false, null, String.format("Failed to get list of path [%s], it's a file path.", path));
         }
 
         String[] argsList = file.list();
@@ -383,7 +399,7 @@ public class FileUtil{
         String fileName = file.getName();
         String fileExtension = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf(".") + 1).trim() : "";
         if(fileExtension.length() == 0){
-            return Result.getResult(false, null, String.format("Failed to get file extension of path [%s], it hasn't a extension.", path));
+            return Result.getResult(false, "", String.format("Failed to get file extension of path [%s], it hasn't a extension.", path));
         }
         else {
             return Result.getResult(true, fileExtension, String.format("Got file extension [%s] of path [%s].", fileExtension, path));
@@ -436,16 +452,17 @@ public class FileUtil{
             return Result.getResult(false, null, String.format("Failed to rename to [%s], the source path [%s] doesn't exist.", newFileName, path));
         }
 
-        String parentPath = file.getParent();
+        File newFile = new File(newFileName);
+        String parentPath = newFile.getParent();
         String newPath;
         if(parentPath != null && parentPath.trim().length() > 0){
-            newPath = file.getParent() + File.separator + newFileName;
+            newPath = file.getParent() + File.separator + newFile.getName();
         }
         else {
             newPath = newFileName;
         }
-        File newFile = new File(newPath);
-        if(file.exists()){
+
+        if(newFile.exists()){
             return Result.getResult(false, null, String.format("Failed to rename to [%s], the rename target [%s] already exists.", newFileName, newPath));
         }
 
@@ -536,6 +553,15 @@ public class FileUtil{
             return Result.getResult(false, null, String.format("Failed to read random text from [%s], it isn't a file.", path));
         }
 
+        /**
+         * about indices
+         */
+        if(idxBeginByte < 0){
+            return Result.getResult(false, null, String.format("Failed to read text from file [%s], the begin byte index [%d] must not be less than number [0].", path, idxBeginByte));
+        }
+        if(idxEndByte < 1){
+            return Result.getResult(false, null, String.format("Failed to read text from file [%s], the end byte index [%d] must not be less than number [1].", path, idxEndByte));
+        }
         if(idxBeginByte >= idxEndByte){
             return Result.getResult(false, null, String.format("Failed to read text from file [%s], the begin byte index [%d] must be less than the end byte index [%d].", path, idxBeginByte, idxEndByte));
         }
@@ -544,8 +570,15 @@ public class FileUtil{
             return Result.getResult(false, null, String.format("Failed to read random text from [%s], the parameter charsetName must not be null or empty.", path));
         }
 
+        // do read
         try {
             RandomAccessFile randomAccessFile = new RandomAccessFile(path, "r");
+            long fileSize = randomAccessFile.length();
+            if(idxBeginByte > fileSize){
+                return Result.getResult(false, null, String.format("Failed to read random text from file [%s], the begin byte index [%d] is overflowed than the file size [%d].", path, idxBeginByte, fileSize));
+            }
+
+            idxEndByte = (long)idxEndByte > fileSize ? (int)fileSize : idxEndByte;
             int size = (long)(idxEndByte - idxBeginByte) > randomAccessFile.length() ? (int)randomAccessFile.length() : (idxEndByte - idxBeginByte);
             byte[] bytes = new byte[size];
             randomAccessFile.seek(idxBeginByte);
@@ -562,10 +595,6 @@ public class FileUtil{
 
     public static Result readTextUtf8(String path, int idxBeginByte, int idxEndByte){
         return readText(path, idxBeginByte, idxEndByte, "UTF8");
-    }
-
-    public static Result readTextGb2312(String path, int idxBeginByte, int idxEndByte){
-        return readText(path, idxBeginByte, idxEndByte, "GB2312");
     }
 
     public static Result readTextGbk(String path, int idxBeginByte, int idxEndByte){
