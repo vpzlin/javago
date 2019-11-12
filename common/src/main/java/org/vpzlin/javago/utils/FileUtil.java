@@ -508,7 +508,7 @@ public class FileUtil{
             FileInputStream fileInputStream = new FileInputStream(sourceFile);
             FileOutputStream fileOutputStream = new FileOutputStream(targetFile);
             byte[] bytes = new byte[1024];
-            int i = 0;
+            int i;
             while ((i = fileInputStream.read(bytes)) != -1) {
                 fileOutputStream.write(bytes, 0, i);
             }
