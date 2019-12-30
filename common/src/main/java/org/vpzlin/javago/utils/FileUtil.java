@@ -664,50 +664,46 @@ public class FileUtil{
         return Result.getResult(true, null, String.format("Copied source file [%s] to target file [%s].", sourcePath, targetPath));
     }
 
-    public static Result readText(String path){
-        return null;
-    }
-
     /**
      * read text by index range of bytes
-     * @param path the file path
+     * @param filePath the file path
      * @param idxBeginByte the finger point of begin byte index, the first char's index is [1]
      * @param idxEndByte the finger point of end byte index, this must be large to the parameter [idxBeginByte]
      * @param charsetName the charset name of text file
-     * @return Result.data is a String object
+     * @return Result.data is a String type
      */
-    public static Result readText(String path, int idxBeginByte, int idxEndByte, String charsetName){
-        File file = new File(path);
+    public static Result readText(String filePath, int idxBeginByte, int idxEndByte, String charsetName){
+        File file = new File(filePath);
         if(!file.exists()){
-            return Result.getResult(false, null, String.format("Failed to read random text from [%s], it doesn't exist.", path));
+            return Result.getResult(false, null, String.format("Failed to read random text from [%s], it doesn't exist.", filePath));
         }
         if(!file.isFile()){
-            return Result.getResult(false, null, String.format("Failed to read random text from [%s], it isn't a file.", path));
+            return Result.getResult(false, null, String.format("Failed to read random text from [%s], it isn't a file.", filePath));
         }
 
         /**
          * about indices
          */
         if(idxBeginByte < 0){
-            return Result.getResult(false, null, String.format("Failed to read text from file [%s], the begin byte index [%d] must not be less than number [0].", path, idxBeginByte));
+            return Result.getResult(false, null, String.format("Failed to read text from file [%s], the begin byte index [%d] must not be less than number [0].", filePath, idxBeginByte));
         }
         if(idxEndByte < 1){
-            return Result.getResult(false, null, String.format("Failed to read text from file [%s], the end byte index [%d] must not be less than number [1].", path, idxEndByte));
+            return Result.getResult(false, null, String.format("Failed to read text from file [%s], the end byte index [%d] must not be less than number [1].", filePath, idxEndByte));
         }
         if(idxBeginByte >= idxEndByte){
-            return Result.getResult(false, null, String.format("Failed to read text from file [%s], the begin byte index [%d] must be less than the end byte index [%d].", path, idxBeginByte, idxEndByte));
+            return Result.getResult(false, null, String.format("Failed to read text from file [%s], the begin byte index [%d] must be less than the end byte index [%d].", filePath, idxBeginByte, idxEndByte));
         }
 
         if(charsetName == null || charsetName.trim().length() == 0){
-            return Result.getResult(false, null, String.format("Failed to read random text from [%s], the parameter charsetName must not be null or empty.", path));
+            return Result.getResult(false, null, String.format("Failed to read random text from [%s], the parameter charsetName must not be null or empty.", filePath));
         }
 
         // do read
         try {
-            RandomAccessFile randomAccessFile = new RandomAccessFile(path, "r");
+            RandomAccessFile randomAccessFile = new RandomAccessFile(filePath, "r");
             long fileSize = randomAccessFile.length();
             if(idxBeginByte > fileSize){
-                return Result.getResult(false, null, String.format("Failed to read random text from file [%s], the begin byte index [%d] is overflowed than the file size [%d].", path, idxBeginByte, fileSize));
+                return Result.getResult(false, null, String.format("Failed to read random text from file [%s], the begin byte index [%d] is overflowed than the file size [%d].", filePath, idxBeginByte, fileSize));
             }
 
             idxEndByte = (long)idxEndByte > fileSize ? (int)fileSize : idxEndByte;
@@ -717,55 +713,57 @@ public class FileUtil{
             randomAccessFile.read(bytes);
             randomAccessFile.close();
             String textRead = new String(bytes, charsetName);
-            return Result.getResult(true, textRead, String.format("The random text read from file [%s] is [%s].", path, textRead));
+            return Result.getResult(true, textRead, String.format("The random text read from file [%s] is [%s].", filePath, textRead));
         } catch (FileNotFoundException e) {
-            return Result.getResult(false, null, String.format("Failed to read random text from file [%s], it doesn't exist.", path));
+            return Result.getResult(false, null, String.format("Failed to read random text from file [%s], it doesn't exist.", filePath));
         } catch (IOException e) {
-            return Result.getResult(false, null, String.format("Failed to read random text from file [%s], more info = [%s].", path, e.getMessage()));
+            return Result.getResult(false, null, String.format("Failed to read random text from file [%s], more info = [%s].", filePath, e.getMessage()));
         }
     }
 
     /**
      * read text by index range of bytes using by UTF-8
-     * @param path the file path
+     * @param filePath the file path
      * @param idxBeginByte the finger point of begin byte index, the first char's index is [1]
      * @param idxEndByte the finger point of end byte index, this must be large to the parameter [idxBeginByte]
-     * @return Result.data is a String object
+     * @return Result.data is a String type
      */
-    public static Result readTextUtf8(String path, int idxBeginByte, int idxEndByte){
-        return readText(path, idxBeginByte, idxEndByte, "UTF8");
+    public static Result readTextUtf8(String filePath, int idxBeginByte, int idxEndByte){
+        return readText(filePath, idxBeginByte, idxEndByte, "UTF8");
     }
 
     /**
      * read text by index range of bytes using by GBK
-     * @param path the file path
+     * @param filePath the file path
      * @param idxBeginByte the finger point of begin byte index, the first char's index is [1]
      * @param idxEndByte the finger point of end byte index, this must be large to the parameter [idxBeginByte]
-     * @return Result.data is a String object
+     * @return Result.data is a String type
      */
-    public static Result readTextGbk(String path, int idxBeginByte, int idxEndByte){
-        return readText(path, idxBeginByte, idxEndByte, "GBK");
+    public static Result readTextGbk(String filePath, int idxBeginByte, int idxEndByte){
+        return readText(filePath, idxBeginByte, idxEndByte, "GBK");
     }
 
     /**
-     * @return Result.data is a String object
+     * read text
+     * @param filePath
+     * @param beginLine teh start line number(include), the first line number is [1]
+     * @param endLine the end line number(include)
+     * @param charsetName the charset name of text file
+     * @return Result.data is a String type
      */
-    public static Result readTextLines(String path, int beginLine, int endLine){
+    public static Result readTextLines(String filePath, int beginLine, int endLine, String charsetName){
         return null;
     }
 
-    /**
-     * @return Result.data is a byte[] object
-     */
-    public static Result readBytes(String path){
+    public static Result readBytes(String filePath){
         return null;
     }
 
-    public static Result writeText(String path, String text, boolean overwrite){
+    public static Result writeText(String filePath, String text, boolean overwrite){
         return null;
     }
 
-    public static Result appendText(String path, String text){
+    public static Result appendText(String filePath, String text){
         return null;
     }
 }
