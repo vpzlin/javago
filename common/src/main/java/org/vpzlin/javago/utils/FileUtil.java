@@ -855,6 +855,7 @@ public class FileUtil{
 
         try {
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath, true));
+            // take care, BufferedWriter.append() doesn't mean append, it's similar to BufferedWriter.write()
             bufferedWriter.append(text);
             bufferedWriter.close();
 
