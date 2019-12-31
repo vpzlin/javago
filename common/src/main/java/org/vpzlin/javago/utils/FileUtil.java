@@ -745,25 +745,122 @@ public class FileUtil{
 
     /**
      * read text
-     * @param filePath
-     * @param beginLine teh start line number(include), the first line number is [1]
-     * @param endLine the end line number(include)
-     * @param charsetName the charset name of text file
+     * @param filePath the file path
+     * @param beginLineNumber the text start line number(include), the first line number is [1], value [-1] means no limits
+     * @param endLineNumber the text end line number(include), value [-1] means no limits
      * @return Result.data is a String type
      */
-    public static Result readTextLines(String filePath, int beginLine, int endLine, String charsetName){
-        return null;
+    public static Result readTextLines(String filePath, int beginLineNumber, int endLineNumber){
+        if(beginLineNumber < 1 && beginLineNumber != -1){
+            return Result.getResult(false, null, String.format("Failed to read text from file [%s], the begin line number [%s] must be bigger than [0], value [-1] means no limits.", filePath, beginLineNumber));
+        }
+        if(endLineNumber < 1 && endLineNumber != -1){
+            return Result.getResult(false, null, String.format("Failed to read text from file [%s], the end line number [%s] must be bigger than [0], value [-1] means no limits.", filePath, beginLineNumber));
+        }
+        if(endLineNumber != -1 && beginLineNumber > endLineNumber ){
+            return Result.getResult(false, null, String.format("Failed to read text from file [%s], the begin line number [%s] must be less than the end line number [%s].", filePath, beginLineNumber, endLineNumber));
+        }
+
+        // do read
+        int lineNumber = 1;
+        StringBuilder stringBuilder = new StringBuilder();
+        try {
+            InputStream inputStream = new FileInputStream(filePath);
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            String textLine;
+            while((textLine = bufferedReader.readLine()) != null){
+                if(lineNumber < beginLineNumber){
+                    lineNumber++;
+                    continue;
+                }
+
+                stringBuilder.append(textLine + "\n");
+                lineNumber++;
+                if(endLineNumber != -1 && lineNumber > endLineNumber){
+                    break;
+                }
+            }
+            inputStream.close();
+
+            return Result.getResult(true, stringBuilder.toString(), String.format("Finished to read text from file [%s].", filePath));
+        } catch (FileNotFoundException e) {
+            return Result.getResult(false, null, String.format("Failed to read text from file [%s], it doesn't exist.", filePath));
+        } catch (IOException e) {
+            return Result.getResult(false, null, String.format("Failed to read text from file [%s], more info = [%s].", filePath, e.getMessage()));
+        }
     }
 
-    public static Result readBytes(String filePath){
-        return null;
+    /**
+     * read text
+     * @param filePath the file path
+     * @param beginLineNumber the text start line number(include), the first line number is [1], value [-1] means no limits
+     * @param endLineNumber the text end line number(include), value [-1] means no limits
+     * @return Result.data is a String type
+     */
+    public static Result readText(String filePath, int beginLineNumber, int endLineNumber){
+        return readTextLines(filePath, beginLineNumber, endLineNumber);
     }
 
+    /**
+     * write text
+     * @param filePath the file path
+     * @param text the text to be wrote
+     * @param overwrite overwrite text file if it already exists
+     * @return
+     */
     public static Result writeText(String filePath, String text, boolean overwrite){
-        return null;
+        File file = new File(filePath);
+        boolean fileExists = file.exists();
+        if(fileExists == true){
+            if(overwrite == true){
+                if(file.delete() == false){
+                    return Result.getResult(false, null, String.format("Failed to write text to file [%s], failed to overwrite it, check the permission of the file firstly.", filePath));
+                }
+            }
+            else {
+                return Result.getResult(false, null, String.format("Failed to write text to file [%s], the file already exists, and it's set to be not overwrote.", filePath));
+            }
+        }
+
+        try {
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath));
+            bufferedWriter.write(text);
+            bufferedWriter.close();
+            if(fileExists == true){
+                return Result.getResult(true, null, String.format("Overwrote text to file [%s].", filePath));
+            }
+            else {
+                return Result.getResult(true, null, String.format("Wrote text to file [%s].", filePath));
+            }
+        } catch (IOException e) {
+            return Result.getResult(false, null, String.format("Failed to write text to file [%s], more info = [%s].", filePath, e.getMessage()));
+        }
+    }
+
+    /**
+     * write text
+     * @param filePath the file path
+     * @param text the text to be wrote
+     * @return
+     */
+    public static Result writeText(String filePath, String text){
+        return writeText(filePath, text, false);
     }
 
     public static Result appendText(String filePath, String text){
-        return null;
+        File file = new File(filePath);
+        if(!file.exists()){
+            return Result.getResult(false, null, String.format("Failed to append text to file [%s], it doesn't exist.", filePath));
+        }
+
+        try {
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath, true));
+            bufferedWriter.append(text);
+            bufferedWriter.close();
+
+            return Result.getResult(true, null, String.format("Appended text to file [%s].", filePath));
+        } catch (IOException e) {
+            return Result.getResult(false, null, String.format("Failed to write text to file [%s], more info = [%s].", filePath, e.getMessage()));
+        }
     }
 }

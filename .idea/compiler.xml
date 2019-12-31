@@ -13,7 +13,7 @@
         <module name="hive" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
+    <bytecodeTargetLevel target="8">
       <module name="common" target="8" />
       <module name="elasticsearch" target="8" />
       <module name="hbase" target="8" />
