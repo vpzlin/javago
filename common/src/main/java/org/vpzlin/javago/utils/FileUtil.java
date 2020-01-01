@@ -9,7 +9,7 @@ public class FileUtil{
     /**
      * check path's status: exist
      * @param path the path of file or directory
-     * @return Result.data is a boolean type which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
      */
     public static Result exists(String path){
         File file = new File(path);
@@ -24,7 +24,7 @@ public class FileUtil{
     /**
      * check path's status: is a file
      * @param path the path of file
-     * @return Result.data is a boolean type which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
      */
     public static Result isFile(String path){
         File file = new File(path);
@@ -43,7 +43,7 @@ public class FileUtil{
     /**
      * check path's status: is a directory
      * @param path the path of directory
-     * @return Result.data is a boolean type which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
      */
     public static Result isDirectory(String path){
         File file = new File(path);
@@ -62,7 +62,7 @@ public class FileUtil{
     /**
      * check path's status: is hidden
      * @param path the path of file or directory
-     * @return Result.data is a boolean type which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
      */
     public static Result isHidden(String path){
         File file = new File(path);
@@ -81,7 +81,7 @@ public class FileUtil{
     /**
      * check path's status: is a absolute path
      * @param path path like "/opt/data/a.txt" is absolute; path like "data/a.txt" or like "a.txt" isn't absolute.
-     * @return Result.data is a boolean type which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
      */
     public static Result isAbsolute(String path){
         File file = new File(path);
@@ -100,7 +100,7 @@ public class FileUtil{
     /**
      * check path's permission: read
      * @param path the path of file or directory
-     * @return Result.data is a boolean type which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
      */
     public static Result canRead(String path){
         File file = new File(path);
@@ -119,7 +119,7 @@ public class FileUtil{
     /**
      * check path's permission: write
      * @param path the path of file or directory
-     * @return Result.data is a boolean type which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
      */
     public static Result canWrite(String path){
         File file = new File(path);
@@ -138,7 +138,7 @@ public class FileUtil{
     /**
      * check path's permission: execute
      * @param path the path of file or directory
-     * @return Result.data is a boolean type which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
      */
     public static Result canExecute(String path){
         File file = new File(path);
@@ -324,7 +324,7 @@ public class FileUtil{
     /**
      * get parent path
      * @param path the path which to get parent path of
-     * @return Result.data is a String type
+     * @return the type of Result.data is [String]
      */
     public static Result getParentPath(String path){
         File file = new File(path);
@@ -337,7 +337,7 @@ public class FileUtil{
     /**
      * get sub files and directories list of directory
      * @param path the path of directory
-     * @return Result.data is a List<String> type
+     * @return the type of Result.data is [List<String>]
      */
     public static Result list(String path){
         File file = new File(path);
@@ -359,7 +359,7 @@ public class FileUtil{
     /**
      * get sub files list of directory
      * @param path the path of directory
-     * @return Result.data is a List<String> type
+     * @return the type of Result.data is [List<String>]
      */
     public static Result listFiles(String path){
         File file = new File(path);
@@ -389,7 +389,7 @@ public class FileUtil{
     /**
      * get sub directories list of directory
      * @param path the path of directory
-     * @return Result.data is a List<String> type
+     * @return the type of Result.data is [List<String>]
      */
     public static Result listDirectories(String path){
         File file = new File(path);
@@ -419,7 +419,7 @@ public class FileUtil{
     /**
      * get sub file and directory of directory which is hidden
      * @param path the path of directory
-     * @return Result.data is a List<String> type
+     * @return the type of Result.data is [List<String>]
      */
     public static Result listHidden(String path){
         File file = new File(path);
@@ -449,7 +449,7 @@ public class FileUtil{
     /**
      * get sub files which are hidden
      * @param path the path of directory
-     * @return Result.data is a List<String> type
+     * @return the type of Result.data is [List<String>]
      */
     public static Result listHiddenFiles(String path){
         File file = new File(path);
@@ -479,7 +479,7 @@ public class FileUtil{
     /**
      * get sub directories which are hidden
      * @param path the path of directory
-     * @return Result.data is a List<String> type
+     * @return the type of Result.data is [List<String>]
      */
     public static Result listHiddenDirectories(String path){
         File file = new File(path);
@@ -509,7 +509,7 @@ public class FileUtil{
     /**
      * get file name of file or directory
      * @param path the path of file or directory
-     * @return Result.data is a String type
+     * @return the type of Result.data is [String]
      */
     public static Result getFileName(String path){
         File file = new File(path);
@@ -521,7 +521,7 @@ public class FileUtil{
     /**
      * get extension of file
      * @param path the path of file or directory
-     * @return Result.data is a String type
+     * @return the type of Result.data is [String]
      */
     public static Result getFileExtension(String path){
         File file = new File(path);
@@ -539,7 +539,7 @@ public class FileUtil{
     /**
      * get file name without extension
      * @param path the path of file
-     * @return Result.data is a String type
+     * @return the type of Result.data is [String]
      */
     public static Result getFileNameWithoutExtension(String path){
         File file = new File(path);
@@ -555,7 +555,7 @@ public class FileUtil{
     /**
      * get absolute path
      * @param path the path of file or directory
-     * @return Result.data is a String type
+     * @return the type of Result.data is [String]
      */
     public static Result getAbsolutePath(String path){
         File file = new File(path);
@@ -567,7 +567,7 @@ public class FileUtil{
     /**
      * get full path
      * @param path the path of file or directory
-     * @return Result.data is a String type
+     * @return the type of Result.data is [String]
      */
     public static Result getFullPath(String path){
         return getAbsolutePath(path);
@@ -670,7 +670,7 @@ public class FileUtil{
      * @param idxBeginByte the finger point of begin byte index, the first char's index is [1]
      * @param idxEndByte the finger point of end byte index, this must be large to the parameter [idxBeginByte]
      * @param charsetName the charset name of text file
-     * @return Result.data is a String type
+     * @return the type of Result.data is [String]
      */
     public static Result readText(String filePath, int idxBeginByte, int idxEndByte, String charsetName){
         File file = new File(filePath);
@@ -726,7 +726,7 @@ public class FileUtil{
      * @param filePath the file path
      * @param idxBeginByte the finger point of begin byte index, the first char's index is [1]
      * @param idxEndByte the finger point of end byte index, this must be large to the parameter [idxBeginByte]
-     * @return Result.data is a String type
+     * @return the type of Result.data is [String]
      */
     public static Result readTextUtf8(String filePath, int idxBeginByte, int idxEndByte){
         return readText(filePath, idxBeginByte, idxEndByte, "UTF8");
@@ -737,7 +737,7 @@ public class FileUtil{
      * @param filePath the file path
      * @param idxBeginByte the finger point of begin byte index, the first char's index is [1]
      * @param idxEndByte the finger point of end byte index, this must be large to the parameter [idxBeginByte]
-     * @return Result.data is a String type
+     * @return the type of Result.data is [String]
      */
     public static Result readTextGbk(String filePath, int idxBeginByte, int idxEndByte){
         return readText(filePath, idxBeginByte, idxEndByte, "GBK");
@@ -748,7 +748,7 @@ public class FileUtil{
      * @param filePath the file path
      * @param beginLineNumber the text start line number(include), the first line number is [1], value [-1] means no limits
      * @param endLineNumber the text end line number(include), value [-1] means no limits
-     * @return Result.data is a String type
+     * @return the type of Result.data is [String]
      */
     public static Result readTextLines(String filePath, int beginLineNumber, int endLineNumber){
         if(beginLineNumber < 1 && beginLineNumber != -1){
@@ -795,7 +795,7 @@ public class FileUtil{
      * @param filePath the file path
      * @param beginLineNumber the text start line number(include), the first line number is [1], value [-1] means no limits
      * @param endLineNumber the text end line number(include), value [-1] means no limits
-     * @return Result.data is a String type
+     * @return the type of Result.data is [String]
      */
     public static Result readText(String filePath, int beginLineNumber, int endLineNumber){
         return readTextLines(filePath, beginLineNumber, endLineNumber);
