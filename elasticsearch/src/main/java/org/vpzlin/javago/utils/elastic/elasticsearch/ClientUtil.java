@@ -79,7 +79,7 @@ public class ClientUtil {
 
     /**
      * get connection to ElasticSearch server
-     * @param serverIP the servers' IP to connect
+     * @param serverIP the server's IP to connect
      * @param serverPort the servers' port to connect, the default value is [9200]
      * @param connectProtocol the servers' connection protocol to connect, the value supports [http] or [https], the default is [http]
      * @param connectTimeout connection timeout seconds, the default value is [1800]
@@ -93,7 +93,7 @@ public class ClientUtil {
 
     /**
      * get connection to ElasticSearch server
-     * @param serverIP the servers' IP to connect
+     * @param serverIP the server's IP to connect
      * @param serverPort the servers' port to connect, the default value is [9200]
      * @return the type of Result.data is [RestHighLevelClient]
      */
@@ -103,7 +103,7 @@ public class ClientUtil {
 
     /**
      * get connection to ElasticSearch server
-     * @param serverIP the servers' IP to connect
+     * @param serverIP the server's IP to connect
      * @return the type of Result.data is [RestHighLevelClient]
      */
     public static Result getClient(String serverIP){
