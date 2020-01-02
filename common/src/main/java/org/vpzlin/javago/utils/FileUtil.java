@@ -9,7 +9,7 @@ public class FileUtil{
     /**
      * check path's status: exist
      * @param path the path of file or directory
-     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean]
      */
     public static Result exists(String path){
         File file = new File(path);
@@ -17,140 +17,140 @@ public class FileUtil{
             return Result.getResult(true, true, String.format("Path [%s] exists.", path));
         }
         else {
-            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(true, false, String.format("Path [%s] doesn't exist.", path));
         }
     }
 
     /**
      * check path's status: is a file
      * @param path the path of file
-     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean]
      */
     public static Result isFile(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(true, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.isFile()){
             return Result.getResult(true, true, String.format("Path [%s] is a file.", path));
         }
         else{
-            return Result.getResult(false, true, String.format("Path [%s] isn't a file.", path));
+            return Result.getResult(true, true, String.format("Path [%s] isn't a file.", path));
         }
     }
 
     /**
      * check path's status: is a directory
      * @param path the path of directory
-     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean]
      */
     public static Result isDirectory(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(true, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.isDirectory()){
             return Result.getResult(true, true, String.format("Path [%s] is a directory.", path));
         }
         else{
-            return Result.getResult(false, false, String.format("Path [%s] isn't a directory.", path));
+            return Result.getResult(true, false, String.format("Path [%s] isn't a directory.", path));
         }
     }
 
     /**
      * check path's status: is hidden
      * @param path the path of file or directory
-     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean]
      */
     public static Result isHidden(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(true, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.isHidden()){
             return Result.getResult(true, true, String.format("Path [%s] is hidden.", path));
         }
         else{
-            return Result.getResult(false, false, String.format("Path [%s] isn't hidden.", path));
+            return Result.getResult(true, false, String.format("Path [%s] isn't hidden.", path));
         }
     }
 
     /**
      * check path's status: is a absolute path
      * @param path path like "/opt/data/a.txt" is absolute; path like "data/a.txt" or like "a.txt" isn't absolute.
-     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean]
      */
     public static Result isAbsolute(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(true, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.isAbsolute()){
             return Result.getResult(true, true, String.format("Path [%s] is absolute.", path));
         }
         else{
-            return Result.getResult(false, false, String.format("Path [%s] isn't hidden.", path));
+            return Result.getResult(true, false, String.format("Path [%s] isn't hidden.", path));
         }
     }
 
     /**
      * check path's permission: read
      * @param path the path of file or directory
-     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean]
      */
     public static Result canRead(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(true, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.canRead()){
             return Result.getResult(true, true, String.format("Path [%s] can be read.", path));
         }
         else{
-            return Result.getResult(false, false, String.format("Path [%s] can't be read.", path));
+            return Result.getResult(true, false, String.format("Path [%s] can't be read.", path));
         }
     }
 
     /**
      * check path's permission: write
      * @param path the path of file or directory
-     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean]
      */
     public static Result canWrite(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(true, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.canWrite()){
             return Result.getResult(true, true, String.format("Path [%s] can be wrote.", path));
         }
         else{
-            return Result.getResult(false, false, String.format("Path [%s] can't be wrote.", path));
+            return Result.getResult(true, false, String.format("Path [%s] can't be wrote.", path));
         }
     }
 
     /**
      * check path's permission: execute
      * @param path the path of file or directory
-     * @return the type of Result.data is [boolean], which is equal to Result.isSuccess
+     * @return the type of Result.data is [boolean]
      */
     public static Result canExecute(String path){
         File file = new File(path);
         if(!file.exists()){
-            return Result.getResult(false, false, String.format("Path [%s] doesn't exist.", path));
+            return Result.getResult(true, false, String.format("Path [%s] doesn't exist.", path));
         }
 
         if(file.canExecute()){
             return Result.getResult(true, true, String.format("Path [%s] can be executed.", path));
         }
         else{
-            return Result.getResult(false, false, String.format("Path [%s] can't be executed.", path));
+            return Result.getResult(true, false, String.format("Path [%s] can't be executed.", path));
         }
     }
 
