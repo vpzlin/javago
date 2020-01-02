@@ -30,6 +30,10 @@ public class ClientUtil {
      * @return the type of Result.data is [RestHighLevelClient]
      */
     public static Result getClient(String[] serversIP, String serverPort, String connectProtocol, int connectTimeout, int socketTimeout){
+        if(connectProtocol == null || connectProtocol.toLowerCase().trim().equals("")){
+
+        }
+
         try {
             HttpHost[] httpHosts = new HttpHost[serversIP.length];
             for (int i = 0; i < serversIP.length; i++){
@@ -104,5 +108,20 @@ public class ClientUtil {
      */
     public static Result getClient(String serverIP){
         return getClient(serverIP, serverPort, connectProtocol, connectTimeout, socketTimeout);
+    }
+
+    /**
+     * close ElasticSearch connection client
+     * @param client the ElasticSearch connection client
+     * @return
+     */
+    public static Result closeClient(RestHighLevelClient client){
+        try{
+            client.close();
+            return Result.getResult(true, null, "Closed ElasticSearch client.");
+        }
+        catch (Exception e){
+            return Result.getResult(false, null, String.format("Failed to close ElasticSearch client, more info = [%s].", e.getMessage()));
+        }
     }
 }
