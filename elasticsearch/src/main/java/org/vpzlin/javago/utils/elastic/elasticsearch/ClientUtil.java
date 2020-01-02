@@ -30,8 +30,8 @@ public class ClientUtil {
      * @return the type of Result.data is [RestHighLevelClient]
      */
     public static Result getClient(String[] serversIP, String serverPort, String connectProtocol, int connectTimeout, int socketTimeout){
-        if(connectProtocol == null || connectProtocol.toLowerCase().trim().equals("")){
-
+        if(connectProtocol == null || !(connectProtocol.toLowerCase().trim().equals("http") || connectProtocol.toLowerCase().trim().equals("https"))){
+            return Result.getResult(false, null, String.format("Failed to connect to ElasticSearch server, the servers' connection protocol to connect should be [http] or [https]."));
         }
 
         try {
@@ -54,7 +54,7 @@ public class ClientUtil {
             return Result.getResult(true, client, String.format("Connected to ElasticSearch server [%s], the port is [%s], the protocol is [%s].", Arrays.toString(serversIP).replace("[", "").replace("]", ""), serverPort, connectProtocol));
         }
         catch (Exception e){
-            return Result.getResult(false, null, String.format("Connected to ElasticSearch server [%s], the port is [%s], the protocol is [%s].", Arrays.toString(serversIP).replace("[", "").replace("]", ""), serverPort, connectProtocol));
+            return Result.getResult(false, null, String.format("Failed to connect to ElasticSearch server [%s], the port is [%s], the protocol is [%s], more info = [%s].", Arrays.toString(serversIP).replace("[", "").replace("]", ""), serverPort, connectProtocol, e.getMessage()));
         }
     }
 
