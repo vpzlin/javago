@@ -1,10 +1,23 @@
 package org.vpzlin.javago.utils.elastic.elasticsearch;
 
 import org.elasticsearch.action.admin.indices.alias.Alias;
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
+import org.elasticsearch.action.admin.indices.cache.clear.ClearIndicesCacheRequest;
+import org.elasticsearch.action.admin.indices.cache.clear.ClearIndicesCacheResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.flush.FlushRequest;
+import org.elasticsearch.action.admin.indices.flush.FlushResponse;
+import org.elasticsearch.action.admin.indices.flush.SyncedFlushRequest;
+import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeRequest;
+import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeResponse;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
+import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.SyncedFlushResponse;
 import org.elasticsearch.client.indices.*;
+import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.reindex.ReindexRequest;
@@ -27,6 +40,19 @@ public class IndexUtil {
 
     // the ElasticSearch connection client
     private RestHighLevelClient client;
+
+    /**
+     * transform array to String without bracket
+     * @param array array of String
+     * @return String
+     */
+    private static String transformArrayToStringWithoutBracket(String[] array){
+        if(array == null){
+            return null;
+        }
+
+        return Arrays.toString(array).replace("[", "").replace("]", "").replace(" ", "");
+    }
 
     /**
      * init class witch connection to ElasticSearch server
@@ -345,14 +371,180 @@ public class IndexUtil {
         }
     }
 
-    public Result addIndexAlias(String indexName, String indexAlias){
-        return null;
+    /**
+     * check if index aliases are existed
+     * @param aliasesNames index aliases names
+     * @param indicesNames index names, this parameter can be null or empty
+     * @return the type of Result.data is [boolean]
+     */
+    public Result existAliases(String[] aliasesNames, String[] indicesNames){
+        if(aliasesNames != null && aliasesNames.length == 0){
+            return Result.getResult(false, null, String.format("Failed to check if index aliases names are existed, the aliases names can't be null or empty."));
+        }
+
+        GetAliasesRequest request = new GetAliasesRequest(aliasesNames);
+        if(indicesNames != null){
+            request.indices(indicesNames);
+        }
+        try{
+            if(this.client.indices().existsAlias(request, RequestOptions.DEFAULT) == true){
+                if(indicesNames != null && indicesNames.length > 0){
+                    return Result.getResult(true, true, String.format("Index alias [%s] are existed in indices [%s].", transformArrayToStringWithoutBracket(aliasesNames), transformArrayToStringWithoutBracket(indicesNames)));
+                }
+                else {
+                    return Result.getResult(true, true, String.format("Index alias [%s] are existed.", transformArrayToStringWithoutBracket(aliasesNames)));
+                }
+            }
+            else {
+                if(indicesNames != null && indicesNames.length > 0){
+                    return Result.getResult(true, false, String.format("Index alias [%s] are not existed in indices [%s].", transformArrayToStringWithoutBracket(aliasesNames), transformArrayToStringWithoutBracket(indicesNames)));
+                }
+                else {
+                    return Result.getResult(true, false, String.format("Index alias [%s] are not existed.", transformArrayToStringWithoutBracket(aliasesNames)));
+                }
+            }
+        }
+        catch (Exception e){
+            return Result.getResult(false, null, String.format("Failed to check if index aliases names are existed, more info = [%s].", e.getMessage()));
+        }
+    }
+
+    /**
+     * check if index aliases are existed
+     * @param aliasesNames index aliases names
+     * @return the type of Result.data is [boolean]
+     */
+    public Result existAliases(String[] aliasesNames){
+        return existAliases(aliasesNames, null);
+    }
+
+    /**
+     * check if index aliases are existed
+     * @param aliasName index alias names
+     * @param indexName index names, this parameter can be null or empty
+     * @return the type of Result.data is [boolean]
+     */
+    public Result existAliases(String aliasName, String indexName){
+        String[] aliasesNames = {aliasName};
+        String[] indicesNames = {indexName};
+        return existAliases(aliasesNames, indicesNames);
+    }
+
+    /**
+     * check if index aliases are existed
+     * @param aliasName index alias names
+     * @return the type of Result.data is [boolean]
+     */
+    public Result existAliases(String aliasName){
+        return existAliases(aliasName, null);
+    }
+
+    /**
+     * create index alias
+     * @param indexName index name
+     * @param indexAlias index alias
+     * @return the type of Result.data is [boolean]
+     */
+    public Result createAlias(String indexName, String indexAlias){
+        // check if index exists
+        Result indexExistResult = this.existIndex(indexName);
+        if(indexExistResult.isSuccess() == false){
+            return Result.getResult(false,null, String.format("Failed to create alias [%s] to index [%s]. %s", indexAlias, indexName, indexExistResult.getMessage()));
+        }
+        if((boolean)indexExistResult.getData() == false){
+            return Result.getResult(false,null, String.format("Failed to create alias [%s] to index [%s], the index doesn't exist.", indexAlias, indexName));
+        }
+
+        // check if alias exists
+        Result aliasExistResult = this.existAliases(indexAlias);
+        if(aliasExistResult.isSuccess() == false){
+            return Result.getResult(false,null, String.format("Failed to create alias [%s] to index [%s]. %s", indexAlias, indexName, indexExistResult.getMessage()));
+        }
+        if((boolean)aliasExistResult.getData() == true){
+            return Result.getResult(false,null, String.format("Failed to create alias [%s] to index [%s], the index alias already exist.", indexAlias, indexName));
+        }
+
+        /**
+         * begin to create alias
+         */
+        IndicesAliasesRequest request = new IndicesAliasesRequest();
+        IndicesAliasesRequest.AliasActions aliasActions = new IndicesAliasesRequest.AliasActions(IndicesAliasesRequest.AliasActions.Type.ADD)
+                .index(indexName).alias(indexAlias);
+        // set timeout
+        request.masterNodeTimeout(TimeValue.timeValueMinutes(this.timeoutMinutesMasterNode));
+        request.timeout(TimeValue.timeValueMinutes(this.timeoutMinutesAllNodes));
+        // create alias
+        request.addAliasAction(aliasActions);
+        try{
+            AcknowledgedResponse indicesAliasesResponse = this.client.indices().updateAliases(request, RequestOptions.DEFAULT);
+            if(indicesAliasesResponse.isAcknowledged() == true){
+                return Result.getResult(true, null, String.format("Created alias [%s] to index [%s].", indexAlias, indexName));
+            }
+            else {
+                return Result.getResult(false, null, String.format("Failed to create alias [%s] to index [%s].", indexAlias, indexName));
+            }
+        }
+        catch (Exception e){
+            return Result.getResult(false, null, String.format("Failed to create alias [%s] to index [%s], more info = [%s].", indexAlias, indexName, e.getMessage()));
+        }
+    }
+
+    /**
+     * delete index alias
+     * @param indexName index name
+     * @param indexAlias index alias
+     * @return the type of Result.data is [boolean]
+     */
+    public Result deleteAlias(String indexName, String indexAlias){
+        // check if index exists
+        Result indexExistResult = this.existIndex(indexName);
+        if(indexExistResult.isSuccess() == false){
+            return Result.getResult(false,null, String.format("Failed to delete alias [%s] to index [%s]. %s", indexAlias, indexName, indexExistResult.getMessage()));
+        }
+        if((boolean)indexExistResult.getData() == false){
+            return Result.getResult(false,null, String.format("Failed to delete alias [%s] to index [%s], the index doesn't exist.", indexAlias, indexName));
+        }
+
+        // check if alias exists
+        Result aliasExistResult = this.existAliases(indexAlias);
+        if(aliasExistResult.isSuccess() == false){
+            return Result.getResult(false,null, String.format("Failed to delete alias [%s] to index [%s]. %s", indexAlias, indexName, indexExistResult.getMessage()));
+        }
+        if((boolean)aliasExistResult.getData() == false){
+            return Result.getResult(false,null, String.format("Failed to delete alias [%s] to index [%s], the index alias doesn't exist.", indexAlias, indexName));
+        }
+
+        /**
+         * begin to delete alias
+         */
+        IndicesAliasesRequest request = new IndicesAliasesRequest();
+        IndicesAliasesRequest.AliasActions aliasActions = new IndicesAliasesRequest.AliasActions(IndicesAliasesRequest.AliasActions.Type.REMOVE).index(indexName).alias(indexAlias);
+        // set timeout
+        request.masterNodeTimeout(TimeValue.timeValueMinutes(this.timeoutMinutesMasterNode));
+        request.timeout(TimeValue.timeValueMinutes(this.timeoutMinutesAllNodes));
+        // set timeout
+        request.masterNodeTimeout(TimeValue.timeValueMinutes(this.timeoutMinutesMasterNode));
+        request.timeout(TimeValue.timeValueMinutes(this.timeoutMinutesAllNodes));
+        // create alias
+        request.addAliasAction(aliasActions);
+        try{
+            AcknowledgedResponse indicesAliasesResponse = this.client.indices().updateAliases(request, RequestOptions.DEFAULT);
+            if(indicesAliasesResponse.isAcknowledged() == true){
+                return Result.getResult(true, null, String.format("Deleted alias [%s] to index [%s].", indexAlias, indexName));
+            }
+            else {
+                return Result.getResult(false, null, String.format("Failed to delete alias [%s] of index [%s].", indexAlias, indexName));
+            }
+        }
+        catch (Exception e){
+            return Result.getResult(false, null, String.format("Failed to delete alias [%s] of index [%s], more info = [%s].", indexAlias, indexName, e.getMessage()));
+        }
     }
 
     /**
      * add fields to index
      * @param indexName index name
-     * @param fieldsMapping fields mapping, the key likes [student], the value like [text]
+     * @param fieldsMapping fields mapping, the key likes [student], the value like [text] or [int]
      * @return
      */
     public Result addFields(String indexName, Map<String, String> fieldsMapping){
@@ -399,7 +591,7 @@ public class IndexUtil {
      * @param fieldType field type
      * @return
      */
-    public Result addFields(String indexName, String fieldName, String fieldType){
+    public Result addField(String indexName, String fieldName, String fieldType){
         Map<String, String> fieldMap = new HashMap<>(1);
         fieldMap.put(fieldName, fieldType);
         return this.addFields(fieldName, fieldMap);
@@ -447,7 +639,7 @@ public class IndexUtil {
      */
     public Result getFieldsMapping(String[] indicesNames, String[] fieldsNames){
         if(indicesNames == null && indicesNames.length == 0){
-            return Result.getResult(false, null, String.format("Failed to get fields mapping of index [%s], the indices' names inputted can't be null or empty.", Arrays.toString(indicesNames).replace("[", "").replace("]", "")));
+            return Result.getResult(false, null, String.format("Failed to get fields mapping of index [%s], the indices' names inputted can't be null or empty.", transformArrayToStringWithoutBracket(indicesNames)));
         }
 
         GetFieldMappingsRequest request = new GetFieldMappingsRequest();
@@ -477,10 +669,10 @@ public class IndexUtil {
                 data.put(indexName, fieldsNamesAndTypes);
             }
 
-            return Result.getResult(true, data, String.format("Got fields' mapping of index [%s].", Arrays.toString(indicesNames).replace("[", "").replace("]", "")));
+            return Result.getResult(true, data, String.format("Got fields' mapping of index [%s].", transformArrayToStringWithoutBracket(indicesNames)));
         }
         catch (Exception e){
-            return Result.getResult(false, null, String.format("Failed to fields' mapping of index [%s], more info = [%s].", Arrays.toString(indicesNames).replace("[", "").replace("]", ""), e.getMessage()));
+            return Result.getResult(false, null, String.format("Failed to fields' mapping of index [%s], more info = [%s].", transformArrayToStringWithoutBracket(indicesNames), e.getMessage()));
         }
     }
 
@@ -538,5 +730,269 @@ public class IndexUtil {
         }
 
         return Result.getResult(true, fieldsNames, String.format("Got fields' names of index [%s].", indexName));
+    }
+
+    /**
+     * clear indices cache
+     * @param indicesNames indices names <br/>
+     *                     if indices names is null, it will clear all indices' cache, but if do so, the performance of ES cluster may be very poor
+     * @param clearQueryCache clear cache of query result
+     * @param clearFieldDataCache clear cache of fields' data
+     * @param clearRequestCache clear cache of request
+     * @return
+     */
+    public Result clearIndicesCache(String[] indicesNames,
+                                    boolean clearQueryCache,
+                                    boolean clearFieldDataCache,
+                                    boolean clearRequestCache){
+        // indices names can't be empty
+        // if indices names is null, it will clear all indices' cache, but if do so, the performance of ES cluster may be very poor
+        if(indicesNames != null && indicesNames.length == 0){
+            return Result.getResult(false, null, String.format("No indices names inputted to clear cache, it can be null but can't be empty."));
+        }
+
+        ClearIndicesCacheRequest clearIndicesCacheRequest = new ClearIndicesCacheRequest(indicesNames);
+        // clear cache of query result
+        clearIndicesCacheRequest.queryCache(clearQueryCache);
+        // clear cache of fields' data
+        clearIndicesCacheRequest.fieldDataCache(clearFieldDataCache);
+        // clear cache of request
+        clearIndicesCacheRequest.requestCache(clearRequestCache);
+
+        // begin to clear cache
+        try {
+            ClearIndicesCacheResponse clearIndicesCacheResponse = this.client.indices().clearCache(clearIndicesCacheRequest, RequestOptions.DEFAULT);
+            int totalShards = clearIndicesCacheResponse.getTotalShards();
+            int successfulShards = clearIndicesCacheResponse.getSuccessfulShards();
+            int failedShards = clearIndicesCacheResponse.getFailedShards();
+            String shardsInfo = String.format("TotalShards=[%s], SuccessfulShards=[%s], FailedShards=[%s].", totalShards, successfulShards, failedShards);
+            return Result.getResult(true, null, String.format("Cleared cache of indices [%s]. %s", transformArrayToStringWithoutBracket(indicesNames), shardsInfo));
+        }
+        catch (Exception e){
+            return Result.getResult(false, null, String.format("Failed to clear cache of indices [%s].", transformArrayToStringWithoutBracket(indicesNames)));
+        }
+    }
+
+    /**
+     * clear indices cache
+     * @param indicesNames indices names <br/>
+     *      *              if indices names is null, it will clear all indices' cache, but if do so, the performance of ES cluster may be very poor
+     * @return
+     */
+    public Result clearIndicesCache(String[] indicesNames){
+        return clearIndicesCache(indicesNames, true, true, true);
+    }
+
+    /**
+     * clear index cache
+     * @param indexName indices names, this parameter can't be null or empty
+     * @param clearQueryCache clear cache of query result
+     * @param clearFieldDataCache clear cache of fields' data
+     * @param clearRequestCache clear cache of request
+     * @return
+     */
+    public Result clearIndexCache(String indexName,
+                                  boolean clearQueryCache,
+                                  boolean clearFieldDataCache,
+                                  boolean clearRequestCache){
+        if(indexName == null || indexName.trim().length() == 0){
+            return Result.getResult(false, null, "No index name inputted to clear cache.");
+        }
+
+        String[] indicesNames = {indexName};
+        return clearIndicesCache(indicesNames, clearQueryCache, clearFieldDataCache, clearRequestCache);
+    }
+
+    /**
+     * clear index cache
+     * @param indexName indices names, this parameter can't be null or empty
+     * @return
+     */
+    public Result clearIndexCache(String indexName){
+        return clearIndexCache(indexName, true, true, true);
+    }
+
+    /**
+     * flush indices
+     * do this operation will move data from memory to disk, and remove translog
+     * @param indicesNames indices names, this parameter can be null that it will clear all indices
+     * @return
+     */
+    public Result flushIndices(String[] indicesNames){
+        if(indicesNames != null && indicesNames.length == 0){
+            return Result.getResult(false, null, "Failed to flush indices names. Indices names can be null, but can't be empty.");
+        }
+
+        FlushRequest flushRequest = new FlushRequest(indicesNames);
+        try {
+            FlushResponse flushResponse = this.client.indices().flush(flushRequest, RequestOptions.DEFAULT);
+            int totalShards = flushResponse.getTotalShards();
+            int successfulShards = flushResponse.getSuccessfulShards();
+            int failedShards = flushResponse.getFailedShards();
+            String shardsInfo = String.format("TotalShards=[%s], SuccessfulShards=[%s], FailedShards=[%s].", totalShards, successfulShards, failedShards);
+            String info = indicesNames == null ? "Flushed all indices." : String.format("Flushed indices [%s].", transformArrayToStringWithoutBracket(indicesNames));
+            info += " " + shardsInfo;
+            return Result.getResult(true, null, info);
+        }
+        catch (Exception e){
+            String info = indicesNames == null ? "Failed to flush all indices," : String.format("Failed to flushed indices [%s],", transformArrayToStringWithoutBracket(indicesNames));
+            info += String.format(" more info = [%s].", e.getMessage());
+            return Result.getResult(false, null, info);
+        }
+    }
+
+    /**
+     * flush index
+     * do this operation will move data from memory to disk, and remove translog file
+     * @param indexName index name
+     * @return
+     */
+    public Result flushIndex(String indexName){
+        if(indexName == null || indexName.trim().length() == 0){
+            return Result.getResult(false, null, "No index name inputted to flush, it can't be null or empty.");
+        }
+
+        String[] indicesNames = {indexName};
+        return flushIndices(indicesNames);
+    }
+
+    /**
+     * synced flush indices
+     * do this operation will move data from memory to disk, and remove translog file
+     * @param indicesNames indices names, this parameter can be null that it will clear all indices
+     * @return
+     */
+    public Result syncedFlushIndices(String[] indicesNames){
+        if(indicesNames != null && indicesNames.length == 0){
+            return Result.getResult(false, null, "Failed to flush indices names. Indices names can be null, but can't be empty.");
+        }
+
+        SyncedFlushRequest syncedFlushRequest = new SyncedFlushRequest(indicesNames);
+        try {
+            SyncedFlushResponse syncedFlushResponse = this.client.indices().flushSynced(syncedFlushRequest, RequestOptions.DEFAULT);
+            int totalShards = syncedFlushResponse.totalShards();
+            int successfulShards = syncedFlushResponse.successfulShards();
+            int failedShards = syncedFlushResponse.failedShards();
+            String shardsInfo = String.format("TotalShards=[%s], SuccessfulShards=[%s], FailedShards=[%s].", totalShards, successfulShards, failedShards);
+            String info = indicesNames == null ? "Synced flushed all indices." : String.format("Synced flushed indices [%s].", transformArrayToStringWithoutBracket(indicesNames));
+            info += " " + shardsInfo;
+            return Result.getResult(true, null, info);
+        }
+        catch (Exception e){
+            String info = indicesNames == null ? "Failed to synced flush all indices," : String.format("Failed to synced flushed indices [%s],", transformArrayToStringWithoutBracket(indicesNames));
+            info += String.format(" more info = [%s].", e.getMessage());
+            return Result.getResult(false, null, info);
+        }
+    }
+
+    /**
+     * synced flush index
+     * do this operation will move data from memory to disk, and remove translog file
+     * @param indexName index name
+     * @return
+     */
+    public Result syncedFlushIndex(String indexName){
+        if(indexName == null || indexName.trim().length() == 0){
+            return Result.getResult(false, null, "No index name inputted to synced flush, it can't be null or empty.");
+        }
+
+        String[] indicesNames = {indexName};
+        return syncedFlushIndices(indicesNames);
+    }
+
+    /**
+     * force merge indices
+     * do this operation will cost a lot of computing resource
+     * @param indicesNames indices names, this parameter can be null that it will force merge all indices
+     * @return
+     */
+    public Result forceMergeIndices(String[] indicesNames){
+        // indices names can be null but can't be empty
+        // if indices names is null, it will clear all indices' cache, but if do so, the performance of ES cluster may be very poor
+        if(indicesNames != null && indicesNames.length == 0){
+            return Result.getResult(false, null, String.format("No indices names inputted to force merge, it can be null but can't be empty."));
+        }
+
+        ForceMergeRequest forceMergeRequest = new ForceMergeRequest(indicesNames);
+        // the official recommendation value is [1], it's better not to increase it because of performance
+        forceMergeRequest.maxNumSegments(1);
+        // flush index when merge
+        forceMergeRequest.flush(true);
+        // begin merge
+        try{
+            ForceMergeResponse forceMergeResponse = this.client.indices().forcemerge(forceMergeRequest, RequestOptions.DEFAULT);
+            int totalShards = forceMergeResponse.getTotalShards();
+            int successfulShards = forceMergeResponse.getTotalShards();
+            int failedShards = forceMergeResponse.getTotalShards();
+            String shardsInfo = String.format("TotalShards=[%s], SuccessfulShards=[%s], FailedShards=[%s].", totalShards, successfulShards, failedShards);
+            String info = indicesNames == null ? "Force merged all indices." : String.format("Force merged indices [%s].", transformArrayToStringWithoutBracket(indicesNames));
+            info += " " + shardsInfo;
+            return Result.getResult(true, null, info);
+        }
+        catch (Exception e){
+            String info = indicesNames == null ? "Failed to force merge all indices," : String.format("Failed to force merge indices [%s],", transformArrayToStringWithoutBracket(indicesNames));
+            info += String.format(" more info = [%s].", e.getMessage());
+            return Result.getResult(false, null, info);
+        }
+    }
+
+    /**
+     * force merge indices
+     * do this operation will cost a lot of computing resource
+     * @param indexName index name
+     * @return
+     */
+    public Result forceMergeIndex(String indexName){
+        if(indexName == null || indexName.trim().length() == 0){
+            return Result.getResult(false, null, "Failed to force merge index, no index name or it's empty.");
+        }
+
+        String[] indicesNames = {indexName};
+        return forceMergeIndices(indicesNames);
+    }
+
+    /**
+     * get aliases
+     * @param aliasesNames aliases names
+     * @return the type of Result.data is [Map<String, Set<AliasMetaData>>]
+     */
+    public Result getAliases(String[] aliasesNames){
+        if(aliasesNames != null && aliasesNames.length == 0){
+            return Result.getResult(false, null, "Failed to get aliases, aliases names can be null but can't be empty.");
+        }
+
+        GetAliasesRequest request;
+        if(aliasesNames == null){
+            request = new GetAliasesRequest("_all");
+        }
+        else{
+            request = new GetAliasesRequest(aliasesNames);
+        }
+
+        try {
+            GetAliasesResponse getAliasesResponse = this.client.indices().getAlias(request, RequestOptions.DEFAULT);
+            Map<String, Set<AliasMetaData>> aliases = getAliasesResponse.getAliases();
+            String info = aliasesNames == null ? "Got aliases." : String.format("Got aliases [%s].", transformArrayToStringWithoutBracket(aliasesNames));
+            return Result.getResult(true, aliases, info);
+        }
+        catch (Exception e){
+            String info = aliasesNames == null ? "Failed to get aliases," : String.format("Failed to get aliases [%s],", transformArrayToStringWithoutBracket(aliasesNames));
+            info += String.format(" more info = [%s].", e.getMessage());
+            return Result.getResult(false, null, info);
+        }
+    }
+
+    /**
+     * get alias
+     * @param aliasName alias name
+     * @return the type of Result.data is [Map<String, Set<AliasMetaData>>]
+     */
+    public Result getAlias(String aliasName){
+        if(aliasName == null || aliasName.trim().length() == 0){
+            return Result.getResult(false, null, "Failed to get alias, alias name can't be null or empty.");
+        }
+
+        String[] aliasesNames = {aliasName};
+        return getAliases(aliasesNames);
     }
 }
