@@ -11,6 +11,13 @@ import org.elasticsearch.action.admin.indices.flush.FlushResponse;
 import org.elasticsearch.action.admin.indices.flush.SyncedFlushRequest;
 import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeRequest;
 import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeResponse;
+import org.elasticsearch.action.admin.indices.open.OpenIndexRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
+import org.elasticsearch.action.admin.indices.shrink.ResizeRequest;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -813,7 +820,7 @@ public class IndexUtil {
     }
 
     /**
-     * flush indices
+     * flush indices <br/>
      * do this operation will move data from memory to disk, and remove translog
      * @param indicesNames indices names, this parameter can be null that it will clear all indices
      * @return
@@ -842,7 +849,7 @@ public class IndexUtil {
     }
 
     /**
-     * flush index
+     * flush index <br/>
      * do this operation will move data from memory to disk, and remove translog file
      * @param indexName index name
      * @return
@@ -857,7 +864,52 @@ public class IndexUtil {
     }
 
     /**
-     * synced flush indices
+     * refresh indices <br/>
+     * do this operation will move data from memory to disk, but not remove translog
+     * @param indicesNames indices names, this parameter can be null that it will clear all indices
+     * @return
+     */
+    public Result refreshIndices(String[] indicesNames){
+        if(indicesNames != null && indicesNames.length == 0){
+            return Result.getResult(false, null, "Failed to refresh indices names. Indices names can be null, but can't be empty.");
+        }
+
+        RefreshRequest refreshRequest = new RefreshRequest(indicesNames);
+        try {
+            RefreshResponse refreshResponse = this.client.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+            int totalShards = refreshResponse.getTotalShards();
+            int successfulShards = refreshResponse.getSuccessfulShards();
+            int failedShards = refreshResponse.getFailedShards();
+            String shardsInfo = String.format("TotalShards=[%s], SuccessfulShards=[%s], FailedShards=[%s].", totalShards, successfulShards, failedShards);
+            String info = indicesNames == null ? "Refreshed all indices." : String.format("Refreshed indices [%s].", transformArrayToStringWithoutBracket(indicesNames));
+            info += " " + shardsInfo;
+            return Result.getResult(true, null, info);
+        }
+        catch (Exception e){
+            String info = indicesNames == null ? "Failed to refresh all indices," : String.format("Failed to refresh indices [%s],", transformArrayToStringWithoutBracket(indicesNames));
+            info += String.format(" more info = [%s].", e.getMessage());
+            return Result.getResult(false, null, info);
+        }
+    }
+
+
+    /**
+     * refresh index <br/>
+     * do this operation will move data from memory to disk, but not remove translog file
+     * @param indexName index name
+     * @return
+     */
+    public Result refreshIndex(String indexName){
+        if(indexName == null || indexName.trim().length() == 0){
+            return Result.getResult(false, null, "No index name inputted to refresh, it can't be null or empty.");
+        }
+
+        String[] indicesNames = {indexName};
+        return flushIndices(indicesNames);
+    }
+
+    /**
+     * synced flush indices <br/>
      * do this operation will move data from memory to disk, and remove translog file
      * @param indicesNames indices names, this parameter can be null that it will clear all indices
      * @return
@@ -886,7 +938,7 @@ public class IndexUtil {
     }
 
     /**
-     * synced flush index
+     * synced flush index <br/>
      * do this operation will move data from memory to disk, and remove translog file
      * @param indexName index name
      * @return
@@ -901,7 +953,7 @@ public class IndexUtil {
     }
 
     /**
-     * force merge indices
+     * force merge indices <br/>
      * do this operation will cost a lot of computing resource
      * @param indicesNames indices names, this parameter can be null that it will force merge all indices
      * @return
@@ -937,7 +989,7 @@ public class IndexUtil {
     }
 
     /**
-     * force merge indices
+     * force merge indices <br/>
      * do this operation will cost a lot of computing resource
      * @param indexName index name
      * @return
@@ -994,5 +1046,347 @@ public class IndexUtil {
 
         String[] aliasesNames = {aliasName};
         return getAliases(aliasesNames);
+    }
+
+    /**
+     * get setting of index
+     * @param indexName index name
+     * @param settingName setting name                                                                                 <br/>
+     *        [setting name] index.creation_date          [remark] timestamp, its length is 13                         <br/>
+     *        [setting name] index.number_of_shards                                                                    <br/>
+     *        [setting name] index.number_of_replicas                                                                  <br/>
+     *        [setting name] index.refresh_interval       [remark] the unit of value is second                         <br/>
+     *        [setting name] index.blocks.read_only       [remark] its value is [true] or [false] in type of String
+     * @return the type of Result.data is [String]
+     */
+    public Result getIndexSetting(String indexName, String settingName){
+        Result indexExistResult = existIndex(indexName);
+        if(indexExistResult.isSuccess() == false){
+            return Result.getResult(false, null, String.format("Failed to get setting of index [%s]. %s", indexName, indexExistResult.getMessage()));
+        }
+        if((boolean)indexExistResult.getData() == false){
+            return Result.getResult(false, null, String.format("Failed to get setting of index [%s], the index doesn't exist.", indexName));
+        }
+
+        GetSettingsRequest request = new GetSettingsRequest().indices(indexName);
+        try{
+            GetSettingsResponse getSettingsResponse = this.client.indices().getSettings(request, RequestOptions.DEFAULT);
+            String settingValue = getSettingsResponse.getSetting(indexName, settingName);
+            return Result.getResult(true, settingValue, String.format("Got setting [%s] of index [%s], the value is [%s].", settingName, indexName, settingValue));
+        }
+        catch (Exception e){
+            return Result.getResult(false, null, String.format("Failed to get setting [%s] of index [%s], more info = [%s].", settingName, indexName, e.getMessage()));
+        }
+    }
+
+    /**
+     * get creation date of index, it's timestamp
+     * @param indexName index name
+     * @return the type of Result.data is [String]
+     */
+    public Result getIndexCreationDate(String indexName){
+        Result indexSettingResult = getIndexSetting(indexName, "index.creation_date");
+        if(indexSettingResult.isSuccess() == false){
+            return Result.getResult(false, null, String.format("Failed to get creation date of index [%s]. %s", indexName, indexSettingResult.getMessage()));
+        }
+
+        String creationDate = (String)indexSettingResult.getData();
+        return Result.getResult(true, creationDate, String.format("Got creation date [%s] of index [%s].", creationDate, indexName));
+    }
+
+    /**
+     * get shards number of index
+     * @param indexName index name
+     * @return the type of Result.data is [int]
+     */
+    public Result getIndexShardsNum(String indexName){
+        Result indexSettingResult = getIndexSetting(indexName, "index.number_of_shards");
+        if(indexSettingResult.isSuccess() == false){
+            return Result.getResult(false, null, String.format("Failed to get shards number of index [%s]. %s", indexName, indexSettingResult.getMessage()));
+        }
+
+        int shardsNum = Integer.parseInt((String)indexSettingResult.getData());
+        return Result.getResult(true, shardsNum, String.format("Got shards number [%s] of index [%s].", shardsNum, indexName));
+    }
+
+    /**
+     * get replicas number of index
+     * @param indexName index name
+     * @return the type of Result.data is [int]
+     */
+    public Result getIndexReplicasNum(String indexName){
+        Result indexSettingResult = getIndexSetting(indexName, "index.number_of_replicas");
+        if(indexSettingResult.isSuccess() == false){
+            return Result.getResult(false, null, String.format("Failed to get replicas number of index [%s]. %s", indexName, indexSettingResult.getMessage()));
+        }
+
+        int replicasNumber = Integer.parseInt((String)indexSettingResult.getData());
+        return Result.getResult(true, replicasNumber, String.format("Got replicas number [%s] of index [%s].", replicasNumber, indexName));
+    }
+
+    /**
+     * get refresh interval(seconds) of index
+     * @param indexName index name
+     * @return the type of Result.data is [int]
+     */
+    public Result getIndexRefreshInterval(String indexName){
+        Result indexSettingResult = getIndexSetting(indexName, "index.refresh_interval");
+        if(indexSettingResult.isSuccess() == false){
+            return Result.getResult(false, null, String.format("Failed to get replicas interval of index [%s]. %s", indexName, indexSettingResult.getMessage()));
+        }
+
+        int replicasInterval = Integer.parseInt((String)indexSettingResult.getData());
+        return Result.getResult(true, replicasInterval, String.format("Got replicas interval [%s] of index [%s].", replicasInterval, indexName));
+    }
+
+    /**
+     * get readonly status of index
+     * @param indexName index name
+     * @return the type of Result.data is [boolean]
+     */
+    public Result getIndexReadonly(String indexName){
+        Result indexSettingResult = getIndexSetting(indexName, "index.blocks.read_only");
+        if(indexSettingResult.isSuccess() == false){
+            return Result.getResult(false, null, String.format("Failed to get readonly status of index [%s]. %s", indexName, indexSettingResult.getMessage()));
+        }
+
+        boolean readonlyStatus = (boolean)indexSettingResult.getData();
+        return Result.getResult(true, readonlyStatus, String.format("Got readonly status [%s] of index [%s].", readonlyStatus, indexName));
+    }
+
+    /**
+     * open index
+     * @param indexName index name
+     * @return
+     */
+    public Result openIndex(String indexName){
+        OpenIndexRequest request = new OpenIndexRequest(indexName);
+
+        // set timeout
+        request.masterNodeTimeout(TimeValue.timeValueMinutes(this.timeoutMinutesMasterNode));
+        request.timeout(TimeValue.timeValueMinutes(this.timeoutMinutesAllNodes));
+
+        try{
+            this.client.indices().open(request, RequestOptions.DEFAULT);
+            return Result.getResult(true, null, String.format("Opened index [%s].", indexName));
+        }
+        catch (Exception e){
+            return Result.getResult(false, null, String.format("Failed to open index [%s], more info = [%s].", indexName, e.getMessage()));
+        }
+    }
+
+    /**
+     * close index
+     * @param indexName index name
+     * @return
+     */
+    public Result closeIndex(String indexName){
+        CloseIndexRequest request = new CloseIndexRequest(indexName);
+
+        // set timeout
+        request.setMasterTimeout(TimeValue.timeValueMinutes(this.timeoutMinutesMasterNode));
+        request.setTimeout(TimeValue.timeValueMinutes(this.timeoutMinutesAllNodes));
+
+        try{
+            this.client.indices().close(request, RequestOptions.DEFAULT);
+            return Result.getResult(true, null, String.format("Closed index [%s].", indexName));
+        }
+        catch (Exception e){
+            return Result.getResult(false, null, String.format("Failed to close index [%s], more info = [%s].", indexName, e.getMessage()));
+        }
+    }
+
+    /**
+     * set indices' settings
+     * @param indicesNames indices names
+     * @param settingsMap settings map <br/>
+     *                    [key] number_of_replicas      [value type] String   [value example] 2     [remark] replicas number of index
+     *                    [key] blocks.read_only        [value type] String   [value example] true  [remark] this only supports "true"
+     *                    [key] index.blocks.read_only  [value type] String   [value example] false [remark] this only supports "false"
+     * @return
+     */
+    public Result setIndicesSettings(String[] indicesNames, Map<String, String> settingsMap){
+        if(indicesNames == null || indicesNames.length == 0){
+            return Result.getResult(false, null, String.format("Failed to set indices settings, indices names can't be null or empty."));
+        }
+        if(settingsMap == null || settingsMap.size() ==0){
+            return Result.getResult(false, null, String.format("Failed to set indices settings, settings' map can't be null or empty."));
+        }
+
+        UpdateSettingsRequest request = new UpdateSettingsRequest(indicesNames);
+        request.settings(settingsMap);
+        // set [false] to cover original setting
+        request.setPreserveExisting(false);
+        // set timeout
+        request.masterNodeTimeout(TimeValue.timeValueMinutes(this.timeoutMinutesMasterNode));
+        request.timeout(TimeValue.timeValueMinutes(this.timeoutMinutesAllNodes));
+
+        try{
+            this.client.indices().putSettings(request, RequestOptions.DEFAULT);
+            return Result.getResult(true, null, String.format("Finished set settings of index [%s].", transformArrayToStringWithoutBracket(indicesNames)));
+        }
+        catch (Exception e){
+            return Result.getResult(true, null, String.format("Failed to set settings of index [%s], more info = [%s].", transformArrayToStringWithoutBracket(indicesNames), e.getMessage()));
+        }
+    }
+
+    /**
+     * set index's settings
+     * @param indexName index names
+     * @param settingsMap settings map <br/>
+     *                    [key] number_of_replicas      [value type] String   [value example] 2     [remark] replicas number of index
+     *                    [key] blocks.read_only        [value type] String   [value example] true  [remark] this only supports "true"
+     *                    [key] index.blocks.read_only  [value type] String   [value example] false [remark] this only supports "false"
+     * @return
+     */
+    public Result setIndexSettings(String indexName, Map<String, String> settingsMap){
+        if(indexName == null || indexName.trim().length() == 0){
+            return Result.getResult(false, null, String.format("Failed to set index settings, index name can't be null or empty."));
+        }
+
+        String[] indicesNames = {indexName};
+        return setIndicesSettings(indicesNames, settingsMap);
+    }
+
+    /**
+     * set readonly to indices
+     * @param indicesNames indices names
+     * @param readonly readonly status
+     * @return
+     */
+    public Result setIndicesReadonly(String[] indicesNames, boolean readonly){
+        String settingKey = readonly == true ? "blocks.read_only" : "index.blocks.read_only";
+        Map<String, String> settingMap = new HashMap<>(1);
+        settingMap.put(settingKey, String.valueOf(readonly));
+        return setIndicesSettings(indicesNames, settingMap);
+    }
+
+    /**
+     * set readonly to index
+     * @param indexName index name
+     * @param readonly readonly status
+     * @return
+     */
+    public Result setIndexReadonly(String indexName, boolean readonly){
+        if(indexName == null || indexName.trim().length() == 0){
+            return Result.getResult(false, null, String.format("Failed to set readonly [%s] to index, index name can't be null or empty.", readonly));
+        }
+
+        String[] indicesNames = {indexName};
+        return setIndicesReadonly(indicesNames, readonly);
+    }
+
+    /**
+     * set replicas number to indices
+     * @param indicesNames indices names
+     * @param replicasNum replicas number, its values can't be less than [0]
+     * @return
+     */
+    public Result setIndicesReplicasNum(String[] indicesNames, int replicasNum){
+        if(indicesNames == null || indicesNames.length == 0){
+            return Result.getResult(false, null, String.format("Failed to set replicas number of indices names, indices names can't be null or empty."));
+        }
+
+        if(replicasNum < 0){
+            return Result.getResult(false, null, String.format("Failed to set replicas number of indices names, it can't be less than [0]."));
+        }
+
+        Map<String, String> settingMap = new HashMap<>(1);
+        settingMap.put("index.number_of_replicas", String.valueOf(replicasNum));
+        return setIndicesSettings(indicesNames, settingMap);
+    }
+
+    /**
+     * set replicas number to index
+     * @param indexName index names
+     * @param replicasNum replicas number
+     * @return
+     */
+    public Result setIndexReplicasNum(String indexName, int replicasNum){
+        if(indexName == null || indexName.trim().length() == 0){
+            return Result.getResult(false, null, String.format("Failed to set replicas number [%s] to index, index name can't be null or empty.", replicasNum));
+        }
+
+        String[] indicesNames = {indexName};
+        return setIndicesReplicasNum(indicesNames, replicasNum);
+    }
+
+    /**
+     * shrink source index to new index
+     * @param sourceIndexName source index name
+     * @param newIndexName new index name
+     * @param newIndexShardsNum shards number of new index. <br/>
+     *                          the shards number of source index must be multiple than this, and this must be bigger than [0]
+     * @param newIndexAliasName index alias of new index, this parameter can be null or empty
+     * @return
+     */
+    public Result shrinkIndex(String sourceIndexName, String newIndexName, int newIndexShardsNum, String newIndexAliasName){
+        /* check if source index exists */
+        Result sourceIndexExistResult = existIndex(sourceIndexName);
+        if(sourceIndexExistResult.isSuccess() == false){
+            return Result.getResult(false, null, String.format("Failed to shrink source index [%s] to new index [%s]. %s", sourceIndexName, newIndexName, sourceIndexExistResult.getMessage()));
+        }
+        if((boolean)sourceIndexExistResult.getData() == false){
+            return Result.getResult(false, null, String.format("Failed to shrink source index [%s] to new index [%s], the source index doesn't exist.", sourceIndexName, newIndexName));
+        }
+
+        /* check if new index exists */
+        Result newIndexExistResult = existIndex(sourceIndexName);
+        if(newIndexExistResult.isSuccess() == false){
+            return Result.getResult(false, null, String.format("Failed to shrink source index [%s] to new index [%s]. %s", sourceIndexName, newIndexName, sourceIndexExistResult.getMessage()));
+        }
+        if((boolean)newIndexExistResult.getData() == true){
+            return Result.getResult(false, null, String.format("Failed to shrink source index [%s] to new index [%s], the new index already exists.", sourceIndexName, newIndexName));
+        }
+
+        /* check shards number of new index */
+        if(newIndexShardsNum < 1){
+            return Result.getResult(false, null, String.format("Failed to shrink source index [%s] to new index [%s], the shards number of new index can't be less than 1.", sourceIndexName, newIndexName));
+        }
+        Result sourceIndexshardsNumResult = getIndexShardsNum(sourceIndexName);
+        if(sourceIndexshardsNumResult.isSuccess() == false){
+            return Result.getResult(false, null, String.format("Failed to shrink source index [%s] to new index [%s]. %s.", sourceIndexName, newIndexName, sourceIndexshardsNumResult.getMessage()));
+        }
+        int sourceIndexShardsNum = (int)sourceIndexshardsNumResult.getData();
+        if(sourceIndexShardsNum / newIndexShardsNum < 1 || sourceIndexShardsNum % newIndexShardsNum != 0){
+            return Result.getResult(false, null, String.format("Failed to shrink source index [%s] to new index [%s], the shards number [%s] of source index must be multiple than the shards number [%s] of new index.", sourceIndexName, newIndexName, sourceIndexShardsNum, newIndexShardsNum));
+        }
+
+        /**
+         * shrink index
+         */
+        ResizeRequest request = new ResizeRequest(newIndexName, sourceIndexName);
+        /* set timeout */
+        request.masterNodeTimeout(TimeValue.timeValueMinutes(this.timeoutMinutesMasterNode));
+        request.timeout(TimeValue.timeValueMinutes(this.timeoutMinutesAllNodes));
+        // set alias of new index
+        if(newIndexAliasName != null && newIndexAliasName.trim().length() > 0){
+            // 新索引的别名
+            request.getTargetIndexRequest().alias(new Alias(newIndexAliasName));
+        }
+        // set shrink request
+        request.getTargetIndexRequest().settings(Settings.builder()
+                .put("index.number_of_shards", newIndexShardsNum)
+                // remove configuration requirements of new index
+                .putNull("index.routing.allocation.require._name"));
+        try{
+            this.client.indices().shrink(request, RequestOptions.DEFAULT);
+            return Result.getResult(true, null, String.format("Shrank source index [%s] to new index [%s].", sourceIndexName, newIndexName));
+        }
+        catch (Exception e){
+            return Result.getResult(false, null, String.format("Failed to shrink source index [%s] to new index [%s]. %s.", sourceIndexName, newIndexName, e.getMessage()));
+        }
+    }
+
+    /**
+     * shrink source index to new index
+     * @param sourceIndexName source index name
+     * @param newIndexName new index name
+     * @param newIndexShardsNum shards number of new index. <br/>
+     *                          the shards number of source index must be multiple than this, and this must be bigger than [0]
+     * @return
+     */
+    public Result shrinkIndex(String sourceIndexName, String newIndexName, int newIndexShardsNum){
+        return shrinkIndex(sourceIndexName, newIndexName, newIndexShardsNum, null);
     }
 }
