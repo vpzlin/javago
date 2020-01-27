@@ -386,7 +386,7 @@ public class IndexUtil {
      */
     public Result existAliases(String[] aliasesNames, String[] indicesNames){
         if(aliasesNames != null && aliasesNames.length == 0){
-            return Result.getResult(false, null, String.format("Failed to check if index aliases names are existed, the aliases names can't be null or empty."));
+            return Result.getResult(false, null, String.format("Failed to check if index aliases' names exist, the aliases' names can't be null or empty."));
         }
 
         GetAliasesRequest request = new GetAliasesRequest(aliasesNames);
@@ -396,23 +396,23 @@ public class IndexUtil {
         try{
             if(this.client.indices().existsAlias(request, RequestOptions.DEFAULT) == true){
                 if(indicesNames != null && indicesNames.length > 0){
-                    return Result.getResult(true, true, String.format("Index alias [%s] are existed in indices [%s].", transformArrayToStringWithoutBracket(aliasesNames), transformArrayToStringWithoutBracket(indicesNames)));
+                    return Result.getResult(true, true, String.format("Index aliases [%s] exist in indices [%s].", transformArrayToStringWithoutBracket(aliasesNames), transformArrayToStringWithoutBracket(indicesNames)));
                 }
                 else {
-                    return Result.getResult(true, true, String.format("Index alias [%s] are existed.", transformArrayToStringWithoutBracket(aliasesNames)));
+                    return Result.getResult(true, true, String.format("Index aliases [%s] exist.", transformArrayToStringWithoutBracket(aliasesNames)));
                 }
             }
             else {
                 if(indicesNames != null && indicesNames.length > 0){
-                    return Result.getResult(true, false, String.format("Index alias [%s] are not existed in indices [%s].", transformArrayToStringWithoutBracket(aliasesNames), transformArrayToStringWithoutBracket(indicesNames)));
+                    return Result.getResult(true, false, String.format("Index aliases [%s] doesn't exist in indices [%s].", transformArrayToStringWithoutBracket(aliasesNames), transformArrayToStringWithoutBracket(indicesNames)));
                 }
                 else {
-                    return Result.getResult(true, false, String.format("Index alias [%s] are not existed.", transformArrayToStringWithoutBracket(aliasesNames)));
+                    return Result.getResult(true, false, String.format("Index aliases [%s] doesn't exist.", transformArrayToStringWithoutBracket(aliasesNames)));
                 }
             }
         }
         catch (Exception e){
-            return Result.getResult(false, null, String.format("Failed to check if index aliases names are existed, more info = [%s].", e.getMessage()));
+            return Result.getResult(false, null, String.format("Failed to check if index aliases' names exist, more info = [%s].", e.getMessage()));
         }
     }
 
@@ -431,7 +431,7 @@ public class IndexUtil {
      * @param indexName index names, this parameter can be null or empty
      * @return the type of Result.data is [boolean]
      */
-    public Result existAliases(String aliasName, String indexName){
+    public Result existAlias(String aliasName, String indexName){
         String[] aliasesNames = {aliasName};
         String[] indicesNames = {indexName};
         return existAliases(aliasesNames, indicesNames);
@@ -442,8 +442,8 @@ public class IndexUtil {
      * @param aliasName index alias names
      * @return the type of Result.data is [boolean]
      */
-    public Result existAliases(String aliasName){
-        return existAliases(aliasName, null);
+    public Result existAlias(String aliasName){
+        return existAlias(aliasName, null);
     }
 
     /**
@@ -463,7 +463,7 @@ public class IndexUtil {
         }
 
         // check if alias exists
-        Result aliasExistResult = this.existAliases(indexAlias);
+        Result aliasExistResult = this.existAlias(indexAlias);
         if(aliasExistResult.isSuccess() == false){
             return Result.getResult(false,null, String.format("Failed to create alias [%s] to index [%s]. %s", indexAlias, indexName, indexExistResult.getMessage()));
         }
@@ -513,7 +513,7 @@ public class IndexUtil {
         }
 
         // check if alias exists
-        Result aliasExistResult = this.existAliases(indexAlias);
+        Result aliasExistResult = this.existAlias(indexAlias);
         if(aliasExistResult.isSuccess() == false){
             return Result.getResult(false,null, String.format("Failed to delete alias [%s] to index [%s]. %s", indexAlias, indexName, indexExistResult.getMessage()));
         }
