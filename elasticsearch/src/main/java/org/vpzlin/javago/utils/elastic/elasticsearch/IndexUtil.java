@@ -70,6 +70,8 @@ public class IndexUtil {
         if(client == null){
             throw new Exception("Failed to init class [IndexUtil], the input parameter [RestHighLevelClient client] can't be null.");
         }
+
+        this.client = client;
     }
 
     /**
@@ -87,7 +89,7 @@ public class IndexUtil {
             this.client = (RestHighLevelClient)result.getData();
         }
         else {
-            throw new Exception(String.format("Failed to init class [IndexUtil]. [%s]", result.getMessage()));
+            throw new Exception(String.format("Failed to init class [IndexUtil], more info = [%s]", result.getMessage()));
         }
     }
 
@@ -103,7 +105,7 @@ public class IndexUtil {
             this.client = (RestHighLevelClient)result.getData();
         }
         else {
-            throw new Exception(String.format("Failed to init class [IndexUtil]. [%s]", result.getMessage()));
+            throw new Exception(String.format("Failed to init class [IndexUtil], more info = [%s]", result.getMessage()));
         }
     }
 
@@ -118,7 +120,7 @@ public class IndexUtil {
             this.client = (RestHighLevelClient)result.getData();
         }
         else {
-            throw new Exception(String.format("Failed to init class [IndexUtil]. [%s]", result.getMessage()));
+            throw new Exception(String.format("Failed to init class [IndexUtil], more info = [%s]", result.getMessage()));
         }
     }
 
@@ -137,7 +139,7 @@ public class IndexUtil {
             this.client = (RestHighLevelClient)result.getData();
         }
         else {
-            throw new Exception(String.format("Failed to init class [IndexUtil]. [%s]", result.getMessage()));
+            throw new Exception(String.format("Failed to init class [IndexUtil], more info = [%s]", result.getMessage()));
         }
     }
 
@@ -153,7 +155,7 @@ public class IndexUtil {
             this.client = (RestHighLevelClient)result.getData();
         }
         else {
-            throw new Exception(String.format("Failed to init class [IndexUtil]. [%s]", result.getMessage()));
+            throw new Exception(String.format("Failed to init class [IndexUtil], more info = [%s]", result.getMessage()));
         }
     }
 
@@ -168,7 +170,7 @@ public class IndexUtil {
             this.client = (RestHighLevelClient)result.getData();
         }
         else {
-            throw new Exception(String.format("Failed to init class [IndexUtil]. [%s]", result.getMessage()));
+            throw new Exception(String.format("Failed to init class [IndexUtil], more info = [%s]", result.getMessage()));
         }
     }
 
