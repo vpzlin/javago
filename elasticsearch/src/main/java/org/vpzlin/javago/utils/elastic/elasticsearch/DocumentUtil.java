@@ -113,7 +113,7 @@ public class DocumentUtil {
             this.client = (RestHighLevelClient)result.getData();
         }
         else {
-            throw new Exception(String.format("Failed to init class [DocumentUtil], more info = [%s]", result.getMessage()));
+            throw new Exception(String.format("Failed to init class [DocumentUtil]. %s", result.getMessage()));
         }
     }
 
@@ -129,7 +129,7 @@ public class DocumentUtil {
             this.client = (RestHighLevelClient)result.getData();
         }
         else {
-            throw new Exception(String.format("Failed to init class [DocumentUtil], more info = [%s]", result.getMessage()));
+            throw new Exception(String.format("Failed to init class [DocumentUtil]. %s", result.getMessage()));
         }
     }
 
@@ -144,7 +144,7 @@ public class DocumentUtil {
             this.client = (RestHighLevelClient)result.getData();
         }
         else {
-            throw new Exception(String.format("Failed to init class [DocumentUtil], more info = [%s]", result.getMessage()));
+            throw new Exception(String.format("Failed to init class [DocumentUtil]. %s", result.getMessage()));
         }
     }
 
@@ -163,7 +163,7 @@ public class DocumentUtil {
             this.client = (RestHighLevelClient)result.getData();
         }
         else {
-            throw new Exception(String.format("Failed to init class [DocumentUtil], more info = [%s]", result.getMessage()));
+            throw new Exception(String.format("Failed to init class [DocumentUtil]. %s", result.getMessage()));
         }
     }
 
@@ -179,7 +179,7 @@ public class DocumentUtil {
             this.client = (RestHighLevelClient)result.getData();
         }
         else {
-            throw new Exception(String.format("Failed to init class [DocumentUtil], more info = [%s]", result.getMessage()));
+            throw new Exception(String.format("Failed to init class [DocumentUtil]. %s", result.getMessage()));
         }
     }
 
@@ -194,7 +194,7 @@ public class DocumentUtil {
             this.client = (RestHighLevelClient)result.getData();
         }
         else {
-            throw new Exception(String.format("Failed to init class [DocumentUtil], more info = [%s]", result.getMessage()));
+            throw new Exception(String.format("Failed to init class [DocumentUtil]. %s", result.getMessage()));
         }
     }
 
