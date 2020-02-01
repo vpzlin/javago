@@ -19,7 +19,7 @@ public class HBaseUtil {
     private Connection connection;
     // max version number
     private int maxVersionNumber = HConstants.ALL_VERSIONS;
-    // all threads use their Admin alone
+    // all threads use their Admin alone best
     private Admin admin;
 
     /**
@@ -43,152 +43,142 @@ public class HBaseUtil {
      * @param zookeeperServers zookeeper server ip or servers' names, separated by commas
      * @param zookeeperPort zookeeper server port
      * @param connectionPoolSize connection pool size, default value is [1]
-     * @throws Exception
+     * @throws Exception error of initializing class
      */
     public HBaseUtil(String zookeeperServers, String zookeeperPort, int connectionPoolSize) throws Exception{
         Result connectionResult = ConnectionUtil.getHBaseConnection(zookeeperServers, zookeeperPort, connectionPoolSize);
-        if(connectionResult.isSuccess() == false){
+        if(!connectionResult.isSuccess()){
             throw new Exception(String.format("Failed to init class [HBaseUtil]. %s", connectionResult.getMessage()));
         }
         else {
             this.connection = (Connection)connectionResult.getData();
+            this.admin = this.connection.getAdmin();
         }
-
-        this.admin = this.connection.getAdmin();
     }
 
     /**
      * init class with connection to HBase
      * @param zookeeperServers zookeeper server ip or servers' names, separated by commas
      * @param zookeeperPort zookeeper server port
-     * @throws Exception
+     * @throws Exception error of initializing class
      */
     public HBaseUtil(String zookeeperServers, String zookeeperPort) throws Exception{
         Result connectionResult = ConnectionUtil.getHBaseConnection(zookeeperServers, zookeeperPort, 1);
-        if(connectionResult.isSuccess() == false){
+        if(!connectionResult.isSuccess()){
             throw new Exception(String.format("Failed to init class [HBaseUtil]. %s", connectionResult.getMessage()));
         }
         else {
             this.connection = (Connection)connectionResult.getData();
+            this.admin = this.connection.getAdmin();
         }
-
-        this.admin = this.connection.getAdmin();
     }
 
 
     /**
-     * 判断HBase表是否存在
-     * @param tableName 表名
-     * @return 结果：        <br/>
-     *      true:存在        <br/>
-     *      false:不存在     <br/>
-     * @throws Exception 执行失败
+     * check if HBase table exists
+     * @param tableName table name
+     * @return the type of Result.data is [boolean]
      */
-    public boolean existTable(String tableName) throws Exception{
+    public Result existTable(String tableName){
         if(tableName == null || tableName.trim().length() == 0){
-            throw new Exception("判断HBase表是否存在失败！表名不能为空。");
+            return Result.getResult(false, null, "Failed to check if HBase table exists, table name can't be null or empty.");
         }
         tableName = tableName.trim();
 
-        return admin.tableExists(TableName.valueOf(tableName));
+        try {
+            if(admin.tableExists(TableName.valueOf(tableName)) == true){
+                return Result.getResult(true, true, String.format("HBase table [%s] exists.", tableName));
+            }
+            else {
+                return Result.getResult(true, false, String.format("HBase table [%s] doesn't exist.", tableName));
+            }
+        } catch (IOException e) {
+            return Result.getResult(false, null, String.format("Failed to check HBase table [%s] exists, more info = [%s].", tableName, e.getMessage()));
+        }
     }
 
     /**
-     * 禁用HBase表
-     * @param tableName 表名
-     * @return 结果：            <br/>
-     *      0:成功               <br/>
-     *      1:执行失败           <br/>
-     *      2:表名不能为空       <br/>
-     *      3:表原本已经禁用了   <br/>
+     * disable HBase table
+     * @param tableName table name
+     * @return
      */
-    public int disableTable(String tableName){
+    public Result disableTable(String tableName){
         if(tableName == null || tableName.trim().length() == 0){
-            logger.error("禁用HBase表失败！表名不能为空。");
-            return 2;
+            return Result.getResult(false, null, "Failed to disable HBase table, the table name can't be null or empty.");
         }
         tableName = tableName.trim();
         try {
-            if(admin.isTableDisabled(TableName.valueOf(tableName)) == true){
-                logger.info("HBase表[" + tableName + "]原本已经禁用了，因此不需要进行禁用操作。");
-                return 3;
+            if(admin.isTableDisabled(TableName.valueOf(tableName))){
+                return Result.getResult(true, null, String.format("It doesn't need to disable HBase table [%s] again, it has already been disabled.", tableName));
             }
             admin.disableTable(TableName.valueOf(tableName));
-            logger.info("成功禁用了HBase表[" + tableName + "]。");
-            return 0;
+            return Result.getResult(true, null, String.format("Disabled HBase table [%s].", tableName));
         }
         catch (Exception e){
-            e.printStackTrace();
-            logger.error("禁用HBase表失败！");
-            return 1;
+            return Result.getResult(false, null, String.format("Failed to disable HBase table [%s], more info = [%s].", tableName, e.getMessage()));
         }
     }
 
     /**
-     * 启用HBase表
-     * @param tableName 表名
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名不能为空         <br/>
-     *      3:表原本已经启用了     <br/>
+     * enable HBase table
+     * @param tableName table name
+     * @return
      */
-    public int enableTable(String tableName){
+    public Result enableTable(String tableName){
         if(tableName == null || tableName.trim().length() == 0){
-            logger.error("启用HBase表失败！表名不能为空。");
-            return 2;
+            return Result.getResult(false, null, "Failed to enable HBase table, the table name can't be null or empty.");
         }
         tableName = tableName.trim();
         try {
-            if(admin.isTableDisabled(TableName.valueOf(tableName)) == false){
-                logger.info("HBase表[" + tableName + "]原本已经启用了，因此不需要进行启用操作。");
-                return 3;
+            if(!admin.isTableDisabled(TableName.valueOf(tableName)){
+                return Result.getResult(true, null, String.format("It doesn't need to enable HBase table [%s] again, it has already been enabled.", tableName));
             }
             admin.enableTable(TableName.valueOf(tableName));
-            logger.info("成功启用了HBase表[" + tableName + "]。");
-            return 0;
+            return Result.getResult(true, null, String.format("Enabled HBase table [%s].", tableName));
         }
         catch (Exception e){
-            e.printStackTrace();
-            logger.error("禁用HBase表失败！");
-            return 1;
+            return Result.getResult(false, null, String.format("Failed to enable HBase table [%s], more info = [%s].", tableName, e.getMessage()));
         }
     }
 
     /**
-     * 删除HBase表
-     * @param tableName 表名
-     * @return 结果：        <br/>
-     *      0:成功           <br/>
-     *      1:执行失败       <br/>
-     *      2:表名不能为空   <br/>
-     *      3:表不存在       <br/>
+     * drop HBase table
+     * @param tableName table name
+     * @param forceDisableTable force disable table if is not disabled firstly
+     * @return
      */
-    public int dropTable(String tableName){
+    public Result dropTable(String tableName, boolean forceDisableTable){
         if(tableName == null || tableName.trim().length() == 0){
-            logger.error("删除HBase表失败！表名不能为空。");
-            return 2;
+            return Result.getResult(false, null, "Failed to drop HBase table, the table name can't be null or empty.");
         }
         tableName = tableName.trim();
         try {
-            logger.info("开始删除HBase表[" + tableName + "]。");
-            if (admin.tableExists(TableName.valueOf(tableName)) == false) {
-                logger.error("删除HBase表失败！表[" + tableName + "]不存在。");
-                return 3;
+            if (!admin.tableExists(TableName.valueOf(tableName))) {
+                return Result.getResult(false, null, String.format("Failed to drop HBase table [%s], it doesn't exist.", tableName));
             }
-            if(admin.isTableDisabled(TableName.valueOf(tableName)) == false){
-                admin.disableTable(TableName.valueOf(tableName));
-                logger.info("禁用了HBase表[" + tableName + "]。");
+            if(!admin.isTableDisabled(TableName.valueOf(tableName))){
+                if(forceDisableTable){
+                    admin.disableTable(TableName.valueOf(tableName));
+                }
+                else {
+                    return Result.getResult(false, null, String.format("Failed to drop HBase table [%s], it must be disabled before dropping it.", tableName));
+                }
             }
             admin.deleteTable(TableName.valueOf(tableName));
-            logger.info("成功删除了HBase表[" + tableName + "]。");
-            return 0;
+            return Result.getResult(true, null, String.format("Dropped HBase table [%s], it doesn't exist.", tableName));
         }
         catch (Exception e){
-            e.printStackTrace();
-            logger.error("删除HBase表失败！");
-            return 1;
+            return Result.getResult(false, null, String.format("Failed to drop HBase table [%s], more info = [%s].", tableName, e.getMessage()));
         }
+    }
+
+    /**
+     * drop HBase table
+     * @param tableName table name
+     * @return
+     */
+    public Result dropTable(String tableName){
+        return dropTable(tableName, false);
     }
 
     /**
@@ -231,7 +221,7 @@ public class HBaseUtil {
      */
     public int createTable(String tableName, String columnFamilyName){
         String[] columnFamilyNames = {columnFamilyName};
-        return createTable(tableName, columnFamilyNames, HBaseCompressionType.NONE, defaultMaxVersion);
+        return createTable(tableName, columnFamilyNames, HBaseCompressionType.NONE, maxVersionNumber);
     }
 
     /**
