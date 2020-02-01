@@ -26,110 +26,198 @@ import org.elasticsearch.search.suggest.SuggestBuilder;
 import org.elasticsearch.search.suggest.SuggestBuilders;
 import org.elasticsearch.search.suggest.SuggestionBuilder;
 import org.elasticsearch.search.suggest.completion.CompletionSuggestion;
+import org.vpzlin.javago.utils.Result;
 
 import java.util.*;
 
 public class SearchUtil {
-    /**
-     * ES访问默认方式
-     */
-    private String hostProtocol = "http";
-    /**
-     * ES连接池
-     */
     private RestHighLevelClient client;
     /**
-     * 日志工具
-     */
-    private static final Logger logger = Logger.getLogger(GeoUtil.class);
-    /**
-     * 超时默认分钟数
+     * default parameters
      */
     private int timeoutMinutes = 2;
     private String textAnalyzer = "";
+    // tag string for highlight fields
+    private String tagHighlight = "highlight";
 
-    private static String SYMBOL_BRACKET_LEFT = "(";
-    private static String SYMBOL_BRACKET_RIGHT = ")";
-    private static String SYMBOL_AND = "&";
-    private static String SYMBOL_OR = "|";
-    private static String SYMBOL_MINUS = "-";
-    private static String SYMBOL_STAR = "*";
-    private static String SYMBOL_COLON = ":";
-    private static String SYMBOL_COMMA = ",";
-    private static String SYMBOL_EQUAL = "=";
-    private static String SYMBOL_AT = "@";
-    private static String SYMBOL_POUND = "#";
-    private static String SYMBOL_PERCENT = "%";
-    private static String STR_ANALYZER_IK_SMART = "ik_smart";
-    private static String STR_ANALYZER_IK_MAX_WORD = "ik_max_word";
+    /**
+     * static parameters
+     */
+    private static char CHAR_BRACKET_LEFT = '(';
+    private static char CHAR_BRACKET_RIGHT = ')';
+    private static char CHAR_TAB = '\t';
+    private static char CHAR_BLANK = ' ';
+    private static char CHAR_STRING_AND = '&';
+    private static char CHAR_STRING_OR = '|';
+    private static char CHAR_STRING_MINUS = '-';
+    private static char CHAR_STRING_POUND = '#';
+    private static char CHAR_STRING_PERCENT = '%';
+    private static String STRING_BRACKET_LEFT = "(";
+    private static String STRING_BRACKET_RIGHT = ")";
+    private static String STRING_AND = "&";
+    private static String STRING_OR = "|";
+    private static String STRING_MINUS = "-";
+    private static String STRING_STAR = "*";
+    private static String STRING_COLON = ":";
+    private static String STRING_COMMA = ",";
+    private static String STRING_EQUAL = "=";
+    private static String STRING_AT = "@";
+    private static String STRING_POUND = "#";
+    private static String STRING_PERCENT = "%";
     private static String STR_GEO_DISTANCE = "geo_distance";
     private static String STR_GEO_DISTANCE_INTERSECTION = "geo_distance_intersection";
     private static String STR_GEO_DISTANCE_UNION = "geo_distance_union";
     private static String STR_GEO_BOUNDING_BOX = "geo_bounding_box";
     private static String STR_GEO_BOUNDING_BOX_INTERSECTION = "geo_bounding_box_intersection";
     private static String STR_GEO_BOUNDING_BOX_UNION = "geo_bounding_box_union";
-    private static String STR_FLAG_COUNT = "count";
-    private static String STR_FIELD_ASSIGN_MATCH_FULL = "@#";
-    private static String STR_FIELD_ASSIGN_MATCH_PART = "@%";
-    private static char CHAR_BRACKET_LEFT = '(';
-    private static char CHAR_BRACKET_RIGHT = ')';
-    private static char CHAR_TAB = '\t';
-    private static char CHAR_BLANK = ' ';
-    private static char CHAR_SYMBOL_AND = '&';
-    private static char CHAR_SYMBOL_OR = '|';
-    private static char CHAR_SYMBOL_MINUS = '-';
-    private static char CHAR_SYMBOL_POUND = '#';
-    private static char CHAR_SYMBOL_PERCENT = '%';
+    private static String STR_ES_KEYWORD_COUNT = "count";
+    private static String STR_FIELD_ASSIGNED_MATCH_FULL = "@#";
+    private static String STR_FIELD_ASSIGNED_MATCH_PART = "@%";
 
     /**
-     * 构造函数
-     * @param client 访问ES RestHighLevelClient
+     * get parameter [STR_TAG_HIGHLIGHT]
+     * @return
+     */
+    public String getStrTagHighlight(){
+        return tagHighlight;
+    }
+
+    /**
+     * set parameter [STR_TAG_HIGHLIGHT]
+     * @return
+     */
+    public Result setStrTagHighlight(String tagHighlight){
+        if(tagHighlight != null && tagHighlight.trim().length() > 0){
+            this.tagHighlight = tagHighlight;
+            return Result.getResult(true, null, String.format("Set tag for highlight fields to [%s].", tagHighlight));
+        }
+        else {
+            return Result.getResult(false, null, String.format("Failed to set tag for highlight fields, the parameter inputted can't be null or empty."));
+        }
+    }
+
+    /**
+     * transform array to String without bracket
+     * @param array array of String
+     * @return String
+     */
+    private static String transformArrayToStringWithoutBracket(String[] array){
+        if(array == null){
+            return null;
+        }
+
+        return Arrays.toString(array).replace("[", "").replace("]", "").replace(" ", "");
+    }
+
+    /**
+     * init class with connection to ElasticSearch server
+     * @param client RestHighLevelClient which has already defined
      */
     public SearchUtil(RestHighLevelClient client){
         this.client = client;
     }
 
     /**
-     * 构造函数
-     * @param hostsIP 访问ES服务器的ip集
-     * @param hostPort 访问ES服务器的端口
+     * init class witch connection to ElasticSearch server
+     * @param serversIP the servers' IP to connect
+     * @param serverPort the servers' port to connect, the default value is [9200]
+     * @param isHttpsProtocol if ElasticSearch JDBC server opened HTTPS protocol, set this to [true], otherwise set this to [false] which means [http] protocol
+     * @throws Exception
      */
-    public SearchUtil(String[] hostsIP, String hostPort){
-        this.setClient(hostsIP, hostPort);
-    }
-
-    /**
-     * 设置ES并进行连接
-     * @param hostIP ES服务器IP
-     * @param hostPort
-     */
-    public void setClient(String hostIP, String hostPort){
-        this.client = ClientUtil.getClient(hostIP, hostPort, this.hostProtocol);
-        if(this.client == null){
-            logger.error("程序执行失败！程序退出。");
-            System.exit(1);
+    public SearchUtil(String[] serversIP, String serverPort, boolean isHttpsProtocol) throws Exception{
+        Result result = ClientUtil.getClient(serversIP, serverPort, isHttpsProtocol);
+        if(result.isSuccess()){
+            this.client = (RestHighLevelClient)result.getData();
+        }
+        else {
+            throw new Exception(String.format("Failed to init class [SearchUtil]. %s", result.getMessage()));
         }
     }
 
     /**
-     * 设置ES并进行连接
-     * @param hostsIP ES服务器IP
-     * @param hostPort
+     * init class witch connection to ElasticSearch server
+     * @param serversIP the servers' IP to connect
+     * @param serverPort the servers' port to connect, the default value is [9200]
+     * @throws Exception
      */
-    public void setClient(String[] hostsIP, String hostPort){
-        this.client = ClientUtil.getClient(hostsIP, hostPort, this.hostProtocol);
-        if(this.client == null){
-            logger.error("程序执行失败！程序退出。");
-            System.exit(1);
+    public SearchUtil(String[] serversIP, String serverPort) throws Exception{
+        Result result = ClientUtil.getClient(serversIP, serverPort);
+        if(result.isSuccess()){
+            this.client = (RestHighLevelClient)result.getData();
+        }
+        else {
+            throw new Exception(String.format("Failed to init class [SearchUtil]. %s", result.getMessage()));
         }
     }
 
     /**
-     * 关闭ES连接
-     * @return 0: 成功
-     *         1: 失败
+     * init class witch connection to ElasticSearch server
+     * @param serversIP the servers' IP to connect
+     * @throws Exception
      */
-    public int closeClient(){
+    public SearchUtil(String[] serversIP) throws Exception{
+        Result result = ClientUtil.getClient(serversIP);
+        if(result.isSuccess()){
+            this.client = (RestHighLevelClient)result.getData();
+        }
+        else {
+            throw new Exception(String.format("Failed to init class [SearchUtil]. %s", result.getMessage()));
+        }
+    }
+
+    /**
+     * init class witch connection to ElasticSearch server
+     * @param serverIP the server's IP to connect
+     * @param serverPort the server's port to connect, the default value is [9200]
+     * @param isHttpsProtocol if ElasticSearch JDBC server opened HTTPS protocol, set this to [true], otherwise set this to [false] which means [http] protocol
+     * @throws Exception
+     */
+    public SearchUtil(String serverIP, String serverPort, boolean isHttpsProtocol) throws Exception{
+        Result result = ClientUtil.getClient(serverIP, serverPort, isHttpsProtocol);
+        if(result.isSuccess()){
+            this.client = (RestHighLevelClient)result.getData();
+        }
+        else {
+            throw new Exception(String.format("Failed to init class [SearchUtil]. %s", result.getMessage()));
+        }
+    }
+
+    /**
+     * init class witch connection to ElasticSearch server
+     * @param serverIP the server's IP to connect
+     * @param serverPort the server's port to connect, the default value is [9200]
+     * @throws Exception
+     */
+    public SearchUtil(String serverIP, String serverPort) throws Exception{
+        Result result = ClientUtil.getClient(serverIP, serverPort);
+        if(result.isSuccess()){
+            this.client = (RestHighLevelClient)result.getData();
+        }
+        else {
+            throw new Exception(String.format("Failed to init class [SearchUtil]. %s", result.getMessage()));
+        }
+    }
+
+    /**
+     * init class witch connection to ElasticSearch server
+     * @param serverIP the server's IP to connect
+     * @throws Exception
+     */
+    public SearchUtil(String serverIP) throws Exception{
+        Result result = ClientUtil.getClient(serverIP);
+        if(result.isSuccess()){
+            this.client = (RestHighLevelClient)result.getData();
+        }
+        else {
+            throw new Exception(String.format("Failed to init class [SearchUtil]. %s", result.getMessage()));
+        }
+    }
+
+    /**
+     * close ElasticSearch connection client
+     * @return
+     */
+    public Result closeClient(){
         return ClientUtil.closeClient(this.client);
     }
 
@@ -138,123 +226,126 @@ public class SearchUtil {
      * @param analyzer 分词器文本
      */
     private void setTextAnalyzer(String analyzer){
-        /* 设置分词器 */
-        if(analyzer != null && analyzer.trim().length() > 0){
-            analyzer = analyzer.trim().toLowerCase();
-            if(STR_ANALYZER_IK_SMART.equals(analyzer)){
-                this.textAnalyzer = STR_ANALYZER_IK_SMART;
-            }
-            else if(STR_ANALYZER_IK_MAX_WORD.equals(analyzer)){
-                this.textAnalyzer = STR_ANALYZER_IK_MAX_WORD;
-            }
-            else {
-                this.textAnalyzer = "";
-            }
-        }
+        this.textAnalyzer = analyzer;
     }
 
     /**
-     * 匹配查询
-     * @param textToQuery 查询的文本
-     * @param fieldNameToQuery 查询的字段
-     * @param fieldNamesToHighlight 高亮字段集（可为 null）
-     * @param indicesNamesToQuery 查询的表
-     * @param fieldsToOrderBy 排序字段（可为 null）
-     * @param rowNumStart 开始行号
-     * @param rowSize 获取的数据量
-     * @return
+     * text match query
+     * @param queryText text to query
+     * @param queryField field name to query
+     * @param queryIndices indices to be queried
+     * @param highlightFields fields names to be highlighted, this parameter can be null
+     * @param orderByFields fields to be order by, this parameter can be null. </br>
+     *                      the key of Map is field name, and the value of it is sorting type [asc] or [desc]
+     * @param textAnalyzer text analyzer
+     * @param rowNumberStart records number to start read, it starts with [1] which means the first record
+     * @param recordsSize the size of records to return
+     * @return the type of Result.data is [com.alibaba.fastjson.JSONArray]
      */
-    public JSONObject matchQuery(String textToQuery, String fieldNameToQuery,
-                                 String[] fieldNamesToHighlight,
-                                 String[] indicesNamesToQuery,
-                                 Map<String, String> fieldsToOrderBy,
-                                 String analyzer,
-                                 int rowNumStart, int rowSize){
-        /* 设置分词器 */
-        setTextAnalyzer(analyzer);
+    public Result matchQuery(String queryText, String queryField,
+                             String[] queryIndices,
+                             String[] highlightFields,
+                             Map<String, String> orderByFields,
+                             String textAnalyzer,
+                             int rowNumberStart, int recordsSize){
+        /**
+         * set text textAnalyzer
+         */
+        if(textAnalyzer != null && textAnalyzer.trim().length() > 0){
+            setTextAnalyzer(textAnalyzer);
+        }
 
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(QueryBuilders.matchQuery(fieldNameToQuery, textToQuery));
+        /* search source builder */
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(QueryBuilders.matchQuery(queryField, queryText));
 
-        /* 设置排序 */
-        // 先以得分降序排序
+        /**
+         * setup fields to order by
+         */
+        // firstly, set to order by ES field [_source] with [desc] by default
         searchSourceBuilder.sort("_score", SortOrder.DESC);
-        for(Map.Entry<String, String> entry: fieldsToOrderBy.entrySet()){
-            String fieldName = entry.getKey().toString();
-            // 默认升序
-            SortOrder sortOrder = SortOrder.ASC;
-            // 设置为降序
-            if("DESC".equals(entry.getValue().trim().toUpperCase())){
-                sortOrder = SortOrder.DESC;
+        // secondly, set to order by fields assigned
+        if(orderByFields != null && orderByFields.size() > 0) {
+            for (Map.Entry<String, String> entry : orderByFields.entrySet()) {
+                String fieldName = entry.getKey();
+                SortOrder sortOrder = SortOrder.ASC;
+                if ("DESC".equals(entry.getValue().trim().toUpperCase())) {
+                    sortOrder = SortOrder.DESC;
+                }
+                searchSourceBuilder.sort(fieldName, sortOrder);
             }
-            searchSourceBuilder.sort(fieldName, sortOrder);
         }
-        /* 设置超时 */
+
+        /* set timeout */
         searchSourceBuilder.timeout(TimeValue.timeValueMinutes(this.timeoutMinutes));
-        /* 设置分页 */
-        if(rowNumStart > 0) {
-            searchSourceBuilder.from(rowNumStart);
+
+        /* set paging */
+        if(rowNumberStart > 0) {
+            searchSourceBuilder.from(rowNumberStart);
         }
-        if(rowSize > 0) {
-            searchSourceBuilder.size(rowSize);
+        if(recordsSize > 0) {
+            searchSourceBuilder.size(recordsSize);
         }
-        /* 设置高亮 */
-        HighlightBuilder highlightBuilder = new HighlightBuilder().preTags("<highlight>").postTags("</highlight>");
-        if(fieldNamesToHighlight.length == 1 && SYMBOL_STAR.equals(fieldNamesToHighlight[0].trim())){
+
+        /**
+         * set highlight
+         */
+        HighlightBuilder highlightBuilder = new HighlightBuilder()
+                .preTags(String.format("<%s>", this.tagHighlight))
+                .postTags(String.format("</%s>", this.tagHighlight));
+        if(highlightFields == null || highlightFields.length == 0 || STRING_STAR.equals(highlightFields[0].trim())){
             highlightBuilder.field("*");
         }
         else {
-            for (String fieldNameToHighlight : fieldNamesToHighlight) {
+            for (String fieldNameToHighlight : highlightFields) {
                 highlightBuilder.field(fieldNameToHighlight);
             }
         }
         searchSourceBuilder.highlighter(highlightBuilder);
 
-        /* 开始进行查询 */
-        SearchRequest request = new SearchRequest(indicesNamesToQuery).source(searchSourceBuilder);
+        /**
+         * begin to query
+         */
+        SearchRequest request = new SearchRequest(queryIndices).source(searchSourceBuilder);
         JSONObject data = new JSONObject();
         try {
-            /* 查询明细数据 */
             SearchResponse dataSearchResponse = this.client.search(request, RequestOptions.DEFAULT);
-            // 获取命中数（ES默认设置上限为1万条）
+            // get number of his, the upper limit of it is [10000] by default
             data.put("_hits", dataSearchResponse.getHits().getTotalHits().value);
-            // 获取耗时（秒）
+            // get time took
             data.put("_took", dataSearchResponse.getTook().seconds());
-            // 分片数
+            // get shards info
             data.put("_shards_total", dataSearchResponse.getTotalShards());
             data.put("_shards_successful", dataSearchResponse.getSuccessfulShards());
             data.put("_shards_failed", dataSearchResponse.getFailedShards());
             data.put("_shards_skipped", dataSearchResponse.getSkippedShards());
             List<Map<String, Object>> rows = new LinkedList<>();
-            // 遍历明细数据
+            // fetch data
             dataSearchResponse.getHits().forEach(e ->{
-                // 每行的数据
+                // data of one row
                 JSONObject rowData = new JSONObject();
-                // 得分
+                // ES hits score
                 rowData.put("_score", e.getScore());
-
-                // 若设置了高亮字段，则取高亮的字段数据
+                /* get highlight fields if assigned before */
                 Map<String, HighlightField> highlightFieldMap = e.getHighlightFields();
                 if(highlightFieldMap.size() > 0){
                     for(Map.Entry<String, HighlightField> entry: highlightFieldMap.entrySet()){
                         rowData.put(entry.getKey(), entry.getValue().fragments()[0]);
                     }
                 }
-                // 若没设置高亮，则取普通的字段数据
+                /* get all fields if not set highlight fields before */
                 else {
                     for(Map.Entry<String, Object> sourceMap: e.getSourceAsMap().entrySet()){
                         rowData.put(sourceMap.getKey(), sourceMap.getValue());
                     }
                 }
-
+                /* add row to data to return */
                 rows.add(rowData);
             });
             data.put("rows", rows);
-            return data;
+            return Result.getResult(true, data, String.format("Finished match querying text [%s] from indices [%s].", queryText, transformArrayToStringWithoutBracket(queryIndices)));
         }
         catch (Exception e){
-            e.printStackTrace();
-            logger.error("ElasticSearch match query失败！");
-            return null;
+            return Result.getResult(false, data, String.format("Failed match query text [%s] from indices [%s], more info = [%s].", queryText, transformArrayToStringWithoutBracket(queryIndices), e.getMessage()));
         }
     }
 
@@ -300,11 +391,11 @@ public class SearchUtil {
          * 处理操作符问题
          */
         // 将重复空格替换成1个空格，然后将空格替换为 & 符号
-        text = text.replaceAll(" +", " ").replace(" ", SYMBOL_AND);
+        text = text.replaceAll(" +", " ").replace(" ", STRING_AND);
         // 将重复的多个 &、|、-  这3种字符替换为1个
-        text = text.replaceAll("&+", SYMBOL_AND);
-        text = text.replaceAll("\\|+", SYMBOL_OR);
-        text = text.replaceAll("-+", SYMBOL_MINUS);
+        text = text.replaceAll("&+", STRING_AND);
+        text = text.replaceAll("\\|+", STRING_OR);
+        text = text.replaceAll("-+", STRING_MINUS);
         // 修补缺失的操作符
         text = fixMissingOperator(text);
 
@@ -577,8 +668,8 @@ public class SearchUtil {
         /**
          * 开始遍历处理
          */
-        while(str.indexOf(SYMBOL_AT, idxSymbolAt) != -1){
-            idxSymbolAt = str.indexOf(SYMBOL_AT, idxSymbolAt);
+        while(str.indexOf(STRING_AT, idxSymbolAt) != -1){
+            idxSymbolAt = str.indexOf(STRING_AT, idxSymbolAt);
 
             // "@"符号已是字符串最后的2个字符
             if(idxSymbolAt >= str.length() - 2){
@@ -586,13 +677,13 @@ public class SearchUtil {
             }
             // "@"符号后面不是"#"符号或"%"符号的，进入下一个循环，找下一个"@"符号
             char symbolAtNextChar = str.charAt(idxSymbolAt + 1);
-            if(!(symbolAtNextChar == CHAR_SYMBOL_POUND || symbolAtNextChar == CHAR_SYMBOL_PERCENT)){
+            if(!(symbolAtNextChar == CHAR_STRING_POUND || symbolAtNextChar == CHAR_STRING_PERCENT)){
                 idxSymbolAt++;
                 continue;
             }
 
             // 没有找到"="符号的，则去掉本轮的"@#"或"@%"标识符，并进入下一个循环
-            int idxSymbolEqual = str.indexOf(SYMBOL_EQUAL, idxSymbolAt + 1);
+            int idxSymbolEqual = str.indexOf(STRING_EQUAL, idxSymbolAt + 1);
             if(idxSymbolEqual == -1) {
                 str = str.substring(0, idxSymbolAt) + str.substring(idxSymbolAt + 2);
                 continue;
@@ -605,8 +696,8 @@ public class SearchUtil {
 
             String insideSymbol = str.substring(idxSymbolAt + 2, idxSymbolEqual);
             // 若"="符号与"@#"或"@%"标识符之间还包含了其他的"@#"或"@%"标识符或者左右圆括号"()"，则去除本轮的标识符（去除包含了括号是因为括号优先原则）
-            if(insideSymbol.contains(SYMBOL_POUND) || insideSymbol.contains(SYMBOL_PERCENT)
-                    || insideSymbol.contains(SYMBOL_BRACKET_LEFT) || insideSymbol.contains(SYMBOL_BRACKET_RIGHT)){
+            if(insideSymbol.contains(STRING_POUND) || insideSymbol.contains(STRING_PERCENT)
+                    || insideSymbol.contains(STRING_BRACKET_LEFT) || insideSymbol.contains(STRING_BRACKET_RIGHT)){
                 str = str.substring(0, idxSymbolAt) + str.substring(idxSymbolAt + 2);
                 continue;
             }
@@ -627,7 +718,7 @@ public class SearchUtil {
                 }
                 str = deleteStringByCharIndex(str, idxToDelete);
                 // 由于删除了空格，重新查找"="符号的索引位
-                idxSymbolEqual = str.indexOf(SYMBOL_EQUAL, idxSymbolAt);
+                idxSymbolEqual = str.indexOf(STRING_EQUAL, idxSymbolAt);
             }
 
             // 去掉"="符号后紧接着的空格或tab制表符
@@ -657,11 +748,11 @@ public class SearchUtil {
         while(i < text.length() - 1){
             // 第1个操作符
             String sCurrent = String.valueOf(text.charAt(i));
-            if(sCurrent.equals(SYMBOL_AND) || sCurrent.equals(SYMBOL_OR) || sCurrent.equals(SYMBOL_MINUS)){
+            if(sCurrent.equals(STRING_AND) || sCurrent.equals(STRING_OR) || sCurrent.equals(STRING_MINUS)){
                 // 第2个操作符
                 String sNext = String.valueOf(text.charAt(i + 1));
-                if(sNext.equals(SYMBOL_AND) || sNext.equals(SYMBOL_OR) || sNext.equals(SYMBOL_MINUS)
-                        || sNext.equals(SYMBOL_BRACKET_LEFT) || sNext.equals(SYMBOL_BRACKET_RIGHT)){
+                if(sNext.equals(STRING_AND) || sNext.equals(STRING_OR) || sNext.equals(STRING_MINUS)
+                        || sNext.equals(STRING_BRACKET_LEFT) || sNext.equals(STRING_BRACKET_RIGHT)){
                     text = text.substring(0, i) + text.substring(i + 1);
                 }
             }
@@ -671,14 +762,14 @@ public class SearchUtil {
         // 先处理右括号后没有操作符的情况，若无，则添加"&"与操作
         int idxBracketRight = 0;
         while(idxBracketRight < text.length() - 1){
-            idxBracketRight = text.indexOf(SYMBOL_BRACKET_RIGHT, idxBracketRight);
+            idxBracketRight = text.indexOf(STRING_BRACKET_RIGHT, idxBracketRight);
             // 没找到右括号 或 右括号已达末尾
             if(idxBracketRight == -1 || idxBracketRight >= text.length() - 1){
                 break;
             }
             String s = text.substring(idxBracketRight + 1, idxBracketRight + 2);
-            if(!(s.equals(SYMBOL_AND) || s.equals(SYMBOL_OR) || s.equals(SYMBOL_MINUS))){
-                text = text.substring(0, idxBracketRight + 1) + SYMBOL_AND + text.substring(idxBracketRight + 1);
+            if(!(s.equals(STRING_AND) || s.equals(STRING_OR) || s.equals(STRING_MINUS))){
+                text = text.substring(0, idxBracketRight + 1) + STRING_AND + text.substring(idxBracketRight + 1);
                 idxBracketRight +=1;
             }
 
@@ -688,7 +779,7 @@ public class SearchUtil {
         // 再处理左括号前没有操作符的情况
         int idxBracketLeft = 0;
         while (idxBracketLeft < text.length()) {
-            idxBracketLeft = text.indexOf(SYMBOL_BRACKET_LEFT, idxBracketLeft);
+            idxBracketLeft = text.indexOf(STRING_BRACKET_LEFT, idxBracketLeft);
             if(idxBracketLeft == -1){
                 break;
             }
@@ -696,19 +787,19 @@ public class SearchUtil {
             if(idxBracketLeft == 0){
                 // 与左括号匹配的右括号后面是"|"操作符
                 // 查找与左括号匹配的右括号
-                idxBracketRight = text.indexOf(SYMBOL_BRACKET_RIGHT);
+                idxBracketRight = text.indexOf(STRING_BRACKET_RIGHT);
                 while(countCharInString(text.substring(idxBracketLeft + 1, idxBracketRight), CHAR_BRACKET_LEFT)
                         != countCharInString(text.substring(idxBracketLeft + 1, idxBracketRight), CHAR_BRACKET_RIGHT)){
                     idxBracketRight = text.indexOf(")", idxBracketRight + 1);
                 }
                 if(idxBracketRight < text.length() - 1
-                        && text.substring(idxBracketRight + 1, idxBracketRight + 2).equals(SYMBOL_OR)){
-                    text = text.substring(0, idxBracketLeft + 1) + SYMBOL_OR + text.substring(idxBracketLeft + 1);
+                        && text.substring(idxBracketRight + 1, idxBracketRight + 2).equals(STRING_OR)){
+                    text = text.substring(0, idxBracketLeft + 1) + STRING_OR + text.substring(idxBracketLeft + 1);
                     idxBracketLeft += 1;
                 }
                 else {
                     // 其他操作符
-                    text = SYMBOL_AND + text;
+                    text = STRING_AND + text;
                     idxBracketLeft += 1;
                 }
             }
@@ -716,8 +807,8 @@ public class SearchUtil {
             else {
                 String s = text.substring(idxBracketLeft - 1, idxBracketLeft);
                 // 位置处于中间的左括号前没有操作符，则视为"&"操作
-                if(!(s.equals(SYMBOL_AND) || s.equals(SYMBOL_OR) || s.equals(SYMBOL_MINUS))){
-                    text = text.substring(0, idxBracketLeft) + SYMBOL_AND + text.substring(idxBracketLeft);
+                if(!(s.equals(STRING_AND) || s.equals(STRING_OR) || s.equals(STRING_MINUS))){
+                    text = text.substring(0, idxBracketLeft) + STRING_AND + text.substring(idxBracketLeft);
                     idxBracketLeft += 1;
                 }
             }
@@ -728,13 +819,13 @@ public class SearchUtil {
         idxBracketLeft = 0;
         while(idxBracketLeft < text.length() - 1){
             // 左括号索引位
-            idxBracketLeft = text.indexOf(SYMBOL_BRACKET_LEFT, idxBracketLeft);
+            idxBracketLeft = text.indexOf(STRING_BRACKET_LEFT, idxBracketLeft);
             if(idxBracketLeft == -1){
                 break;
             }
             // 如果当前左括号后面已是操作符，则遍历寻找下一个操作符
             String s = String.valueOf(text.charAt(idxBracketLeft + 1));
-            if(s.equals(SYMBOL_AND) || s.equals(SYMBOL_OR) || s.equals(SYMBOL_MINUS)){
+            if(s.equals(STRING_AND) || s.equals(STRING_OR) || s.equals(STRING_MINUS)){
                 idxBracketLeft++;
                 continue;
             }
@@ -744,15 +835,15 @@ public class SearchUtil {
             char[] subChars = subText.toCharArray();
             for(i = 0; i < subChars.length; i++){
                 s = String.valueOf(subChars[i]);
-                if(s.equals(SYMBOL_OR)){
+                if(s.equals(STRING_OR)){
                     // 补充在左括号后
-                    text = text.substring(0, idxBracketLeft + 1) + SYMBOL_OR + text.substring(idxBracketLeft + 1);
+                    text = text.substring(0, idxBracketLeft + 1) + STRING_OR + text.substring(idxBracketLeft + 1);
                     break;
                 }
-                else if(s.equals(SYMBOL_AND) || s.equals(SYMBOL_MINUS)
-                        || s.equals(SYMBOL_BRACKET_LEFT) || s.equals(SYMBOL_BRACKET_RIGHT)){
+                else if(s.equals(STRING_AND) || s.equals(STRING_MINUS)
+                        || s.equals(STRING_BRACKET_LEFT) || s.equals(STRING_BRACKET_RIGHT)){
                     // 补充在左括号后
-                    text = text.substring(0, idxBracketLeft + 1) + SYMBOL_AND + text.substring(idxBracketLeft + 1);
+                    text = text.substring(0, idxBracketLeft + 1) + STRING_AND + text.substring(idxBracketLeft + 1);
                     break;
                 }
             }
@@ -762,61 +853,61 @@ public class SearchUtil {
 
         // 再处理字符串首个条件的问题
         String s = text.substring(0, 1);
-        if(!(s.equals(SYMBOL_AND) || s.equals(SYMBOL_OR) || s.equals(SYMBOL_MINUS))){
-            int idxSymbolAnd = text.indexOf(SYMBOL_AND);
-            int idxSymbolOr = text.indexOf(SYMBOL_OR);
+        if(!(s.equals(STRING_AND) || s.equals(STRING_OR) || s.equals(STRING_MINUS))){
+            int idxSymbolAnd = text.indexOf(STRING_AND);
+            int idxSymbolOr = text.indexOf(STRING_OR);
 
             // 查找最近匹配的符号
             if(idxSymbolOr > -1){
                 if(idxSymbolAnd == -1){
-                    text = SYMBOL_OR + text;
+                    text = STRING_OR + text;
                 }
                 else if(idxSymbolOr < idxSymbolAnd){
-                    text = SYMBOL_OR + text;
+                    text = STRING_OR + text;
                 }
                 else {
-                    text = SYMBOL_AND + text;
+                    text = STRING_AND + text;
                 }
             }
             else {
-                text = SYMBOL_AND + text;
+                text = STRING_AND + text;
             }
         }
 
         // 修补"@#"前没有操作符的情况，默认为and操作符（需已经提前处理好"@#="不匹配的情况）
         int idx = 0;
-        while(idx != -1 && text.indexOf(STR_FIELD_ASSIGN_MATCH_FULL, idx) != -1){
-            idx = text.indexOf(STR_FIELD_ASSIGN_MATCH_FULL, idx);
+        while(idx != -1 && text.indexOf(STR_FIELD_ASSIGNED_MATCH_FULL, idx) != -1){
+            idx = text.indexOf(STR_FIELD_ASSIGNED_MATCH_FULL, idx);
             if(idx == 0){
-                text = SYMBOL_AND + text;
+                text = STRING_AND + text;
                 idx++;
             }
-            else if(!(text.charAt(idx - 1) == CHAR_SYMBOL_AND
-                    || text.charAt(idx - 1) == CHAR_SYMBOL_OR
-                    || text.charAt(idx - 1) == CHAR_SYMBOL_MINUS)){
-                text = text.substring(0, idx) + SYMBOL_AND + text.substring(idx);
+            else if(!(text.charAt(idx - 1) == CHAR_STRING_AND
+                    || text.charAt(idx - 1) == CHAR_STRING_OR
+                    || text.charAt(idx - 1) == CHAR_STRING_MINUS)){
+                text = text.substring(0, idx) + STRING_AND + text.substring(idx);
                 idx++;
             }
 
-            idx = text.indexOf(SYMBOL_EQUAL, idx + 1) + 1;
+            idx = text.indexOf(STRING_EQUAL, idx + 1) + 1;
         }
 
         // 修补"@%"前没有操作符的情况，默认为and操作符（需已经提前处理好"@%="不匹配的情况）
         idx = 0;
-        while(idx != -1 && text.indexOf(STR_FIELD_ASSIGN_MATCH_PART, idx) != -1){
-            idx = text.indexOf(STR_FIELD_ASSIGN_MATCH_PART, idx);
+        while(idx != -1 && text.indexOf(STR_FIELD_ASSIGNED_MATCH_PART, idx) != -1){
+            idx = text.indexOf(STR_FIELD_ASSIGNED_MATCH_PART, idx);
             if(idx == 0){
-                text = SYMBOL_AND + text;
+                text = STRING_AND + text;
                 idx++;
             }
-            else if(!(text.charAt(idx - 1) == CHAR_SYMBOL_AND
-                    || text.charAt(idx - 1) == CHAR_SYMBOL_OR
-                    || text.charAt(idx - 1) == CHAR_SYMBOL_MINUS)){
-                text = text.substring(0, idx) + SYMBOL_AND + text.substring(idx);
+            else if(!(text.charAt(idx - 1) == CHAR_STRING_AND
+                    || text.charAt(idx - 1) == CHAR_STRING_OR
+                    || text.charAt(idx - 1) == CHAR_STRING_MINUS)){
+                text = text.substring(0, idx) + STRING_AND + text.substring(idx);
                 idx++;
             }
 
-            idx = text.indexOf(SYMBOL_EQUAL, idx + 1) + 1;
+            idx = text.indexOf(STRING_EQUAL, idx + 1) + 1;
         }
 
         return text;
@@ -838,14 +929,14 @@ public class SearchUtil {
         /**
          * 先处理括号问题，左括号匹配原则。括号内的字符串处理为子节点
          */
-        while(text.contains(SYMBOL_BRACKET_LEFT) == true){
+        while(text.contains(STRING_BRACKET_LEFT) == true){
             // 查找匹配的括号对（这里只考虑左右括号数量相等的情况，因此需提前处理括号不相等的异常情况）
-            int idxBracketLeft = text.indexOf(SYMBOL_BRACKET_LEFT);
-            int idxBracketRight = text.indexOf(SYMBOL_BRACKET_RIGHT);
+            int idxBracketLeft = text.indexOf(STRING_BRACKET_LEFT);
+            int idxBracketRight = text.indexOf(STRING_BRACKET_RIGHT);
             while(countCharInString(text.substring(idxBracketLeft + 1, idxBracketRight), CHAR_BRACKET_LEFT)
                     != countCharInString(text.substring(idxBracketLeft + 1, idxBracketRight), CHAR_BRACKET_RIGHT)){
                 // 右括号索引移动到下一个右括号
-                idxBracketRight = text.indexOf(SYMBOL_BRACKET_LEFT, idxBracketRight + 1);
+                idxBracketRight = text.indexOf(STRING_BRACKET_LEFT, idxBracketRight + 1);
             }
 
             // 添加节点
@@ -872,7 +963,7 @@ public class SearchUtil {
                 continue;
             }
             String sI = String.valueOf(args[i]);
-            if(sI.equals(SYMBOL_AND) || sI.equals(SYMBOL_OR) || sI.equals(SYMBOL_MINUS)){
+            if(sI.equals(STRING_AND) || sI.equals(STRING_OR) || sI.equals(STRING_MINUS)){
                 // 可能输入了错误的连续操作符，只取连续操作符中的最后一个
                 if(sb.length() == 0){
                     operator = String.valueOf(args[i]);
@@ -912,7 +1003,7 @@ public class SearchUtil {
 
         for(TreeNode subTreeNode: node.subTreeNodeList){
             // and 条件
-            if(subTreeNode.operator.equals(SYMBOL_AND)){
+            if(subTreeNode.operator.equals(STRING_AND)){
                 // 括号节点，添加括号节点内的节点为子节点
                 if(subTreeNode.subTreeNodeList.size() > 0){
                     boolQueryBuilder.must(getBoolQueryBuilderFromTreeNode(subTreeNode));
@@ -920,17 +1011,17 @@ public class SearchUtil {
                 // 非括号节点
                 else{
                     // 以"@#"开头的指定字段查询
-                    if(subTreeNode.text.trim().startsWith(STR_FIELD_ASSIGN_MATCH_FULL) == true){
-                        String fieldName = subTreeNode.text.substring(STR_FIELD_ASSIGN_MATCH_FULL.length(), subTreeNode.text.indexOf(SYMBOL_EQUAL, STR_FIELD_ASSIGN_MATCH_FULL.length()));
-                        String fieldValue = subTreeNode.text.substring(subTreeNode.text.indexOf(SYMBOL_EQUAL) + 1);
+                    if(subTreeNode.text.trim().startsWith(STR_FIELD_ASSIGNED_MATCH_FULL) == true){
+                        String fieldName = subTreeNode.text.substring(STR_FIELD_ASSIGNED_MATCH_FULL.length(), subTreeNode.text.indexOf(STRING_EQUAL, STR_FIELD_ASSIGNED_MATCH_FULL.length()));
+                        String fieldValue = subTreeNode.text.substring(subTreeNode.text.indexOf(STRING_EQUAL) + 1);
                         boolQueryBuilder.must(QueryBuilders.termQuery(fieldName, fieldValue));
                     }
                     // 以"@%"开头的指定字段查询
-                    else if(subTreeNode.text.trim().startsWith(STR_FIELD_ASSIGN_MATCH_PART) == true){
-                        String fieldName = subTreeNode.text.substring(STR_FIELD_ASSIGN_MATCH_PART.length(), subTreeNode.text.indexOf(SYMBOL_EQUAL, STR_FIELD_ASSIGN_MATCH_PART.length()));
-                        String fieldValue = subTreeNode.text.substring(subTreeNode.text.indexOf(SYMBOL_EQUAL) + 1);
+                    else if(subTreeNode.text.trim().startsWith(STR_FIELD_ASSIGNED_MATCH_PART) == true){
+                        String fieldName = subTreeNode.text.substring(STR_FIELD_ASSIGNED_MATCH_PART.length(), subTreeNode.text.indexOf(STRING_EQUAL, STR_FIELD_ASSIGNED_MATCH_PART.length()));
+                        String fieldValue = subTreeNode.text.substring(subTreeNode.text.indexOf(STRING_EQUAL) + 1);
                         // 以"@%"开头的模糊查询，需要在值前后加上星号
-                        fieldValue = SYMBOL_STAR + fieldValue + SYMBOL_STAR;
+                        fieldValue = STRING_STAR + fieldValue + STRING_STAR;
                         boolQueryBuilder.must(QueryBuilders.matchPhraseQuery(fieldName, fieldValue));
                     }
                     // 不以"@#"或"@%"开头的情况
@@ -944,7 +1035,7 @@ public class SearchUtil {
                 }
             }
             // or 条件
-            else if(subTreeNode.operator.equals(SYMBOL_OR)){
+            else if(subTreeNode.operator.equals(STRING_OR)){
                 // 括号节点，添加括号节点内的节点为子节点
                 if(subTreeNode.subTreeNodeList.size() > 0){
                     boolQueryBuilder.should(getBoolQueryBuilderFromTreeNode(subTreeNode));
@@ -952,17 +1043,17 @@ public class SearchUtil {
                 // 非括号节点
                 else{
                     // 以"@#"开头的指定字段查询
-                    if(subTreeNode.text.trim().startsWith(STR_FIELD_ASSIGN_MATCH_FULL) == true){
-                        String fieldName = subTreeNode.text.substring(STR_FIELD_ASSIGN_MATCH_FULL.length(), subTreeNode.text.indexOf(SYMBOL_EQUAL, STR_FIELD_ASSIGN_MATCH_FULL.length()));
-                        String fieldValue = subTreeNode.text.substring(subTreeNode.text.indexOf(SYMBOL_EQUAL) + 1);
+                    if(subTreeNode.text.trim().startsWith(STR_FIELD_ASSIGNED_MATCH_FULL) == true){
+                        String fieldName = subTreeNode.text.substring(STR_FIELD_ASSIGNED_MATCH_FULL.length(), subTreeNode.text.indexOf(STRING_EQUAL, STR_FIELD_ASSIGNED_MATCH_FULL.length()));
+                        String fieldValue = subTreeNode.text.substring(subTreeNode.text.indexOf(STRING_EQUAL) + 1);
                         boolQueryBuilder.should(QueryBuilders.termQuery(fieldName, fieldValue));
                     }
                     // 以"@%"开头的指定字段查询
-                    else if(subTreeNode.text.trim().startsWith(STR_FIELD_ASSIGN_MATCH_PART) == true){
-                        String fieldName = subTreeNode.text.substring(STR_FIELD_ASSIGN_MATCH_PART.length(), subTreeNode.text.indexOf(SYMBOL_EQUAL, STR_FIELD_ASSIGN_MATCH_PART.length()));
-                        String fieldValue = subTreeNode.text.substring(subTreeNode.text.indexOf(SYMBOL_EQUAL) + 1);
+                    else if(subTreeNode.text.trim().startsWith(STR_FIELD_ASSIGNED_MATCH_PART) == true){
+                        String fieldName = subTreeNode.text.substring(STR_FIELD_ASSIGNED_MATCH_PART.length(), subTreeNode.text.indexOf(STRING_EQUAL, STR_FIELD_ASSIGNED_MATCH_PART.length()));
+                        String fieldValue = subTreeNode.text.substring(subTreeNode.text.indexOf(STRING_EQUAL) + 1);
                         // 以"@%"开头的模糊查询，需要在值前后加上星号
-                        fieldValue = SYMBOL_STAR + fieldValue + SYMBOL_STAR;
+                        fieldValue = STRING_STAR + fieldValue + STRING_STAR;
                         boolQueryBuilder.should(QueryBuilders.matchPhraseQuery(fieldName, fieldValue));
                     }
                     // 不以"@#"或"@%"开头的情况
@@ -984,17 +1075,17 @@ public class SearchUtil {
                 // 非括号节点
                 else{
                     // 以"@#"开头的指定字段查询
-                    if(subTreeNode.text.trim().startsWith(STR_FIELD_ASSIGN_MATCH_FULL) == true){
-                        String fieldName = subTreeNode.text.substring(STR_FIELD_ASSIGN_MATCH_FULL.length(), subTreeNode.text.indexOf(SYMBOL_EQUAL, STR_FIELD_ASSIGN_MATCH_FULL.length()));
-                        String fieldValue = subTreeNode.text.substring(subTreeNode.text.indexOf(SYMBOL_EQUAL) + 1);
+                    if(subTreeNode.text.trim().startsWith(STR_FIELD_ASSIGNED_MATCH_FULL) == true){
+                        String fieldName = subTreeNode.text.substring(STR_FIELD_ASSIGNED_MATCH_FULL.length(), subTreeNode.text.indexOf(STRING_EQUAL, STR_FIELD_ASSIGNED_MATCH_FULL.length()));
+                        String fieldValue = subTreeNode.text.substring(subTreeNode.text.indexOf(STRING_EQUAL) + 1);
                         boolQueryBuilder.mustNot(QueryBuilders.termQuery(fieldName, fieldValue));
                     }
                     // 以"@%"开头的指定字段查询
-                    else if(subTreeNode.text.trim().startsWith(STR_FIELD_ASSIGN_MATCH_PART) == true){
-                        String fieldName = subTreeNode.text.substring(STR_FIELD_ASSIGN_MATCH_PART.length(), subTreeNode.text.indexOf(SYMBOL_EQUAL, STR_FIELD_ASSIGN_MATCH_PART.length()));
-                        String fieldValue = subTreeNode.text.substring(subTreeNode.text.indexOf(SYMBOL_EQUAL) + 1);
+                    else if(subTreeNode.text.trim().startsWith(STR_FIELD_ASSIGNED_MATCH_PART) == true){
+                        String fieldName = subTreeNode.text.substring(STR_FIELD_ASSIGNED_MATCH_PART.length(), subTreeNode.text.indexOf(STRING_EQUAL, STR_FIELD_ASSIGNED_MATCH_PART.length()));
+                        String fieldValue = subTreeNode.text.substring(subTreeNode.text.indexOf(STRING_EQUAL) + 1);
                         // 以"@%"开头的模糊查询，需要在值前后加上星号
-                        fieldValue = SYMBOL_STAR + fieldValue + SYMBOL_STAR;
+                        fieldValue = STRING_STAR + fieldValue + STRING_STAR;
                         boolQueryBuilder.mustNot(QueryBuilders.matchPhraseQuery(fieldName, fieldValue));
                     }
                     // 不以"@#"或"@%"开头的情况
@@ -1071,7 +1162,7 @@ public class SearchUtil {
             // 替换空格与tab符，并根据":"转成链表
             geoLimit = geoLimit.replace(" ", "").replace("\t", "").trim();
             LinkedList<String> list = new LinkedList<>();
-            for(String str: geoLimit.split(SYMBOL_COLON)){
+            for(String str: geoLimit.split(STRING_COLON)){
                 if(str.trim().length() > 0){
                     list.add(str.trim());
                 }
@@ -1082,7 +1173,7 @@ public class SearchUtil {
             String value = list.pop();
             // 中心圆的查询
             if(geoType.equals(STR_GEO_DISTANCE)){
-                String[] values = value.split(SYMBOL_COMMA);
+                String[] values = value.split(STRING_COMMA);
                 // 中心圆点经度
                 double lon = Double.valueOf(values[0]);
                 // 中心圆点纬度
@@ -1095,12 +1186,12 @@ public class SearchUtil {
             // 中心圆的交集
             else if(geoType.equals(STR_GEO_DISTANCE_INTERSECTION)){
                 int idx = 0;
-                while(idx >=0 && value.indexOf(SYMBOL_BRACKET_LEFT, idx) != -1){
+                while(idx >=0 && value.indexOf(STRING_BRACKET_LEFT, idx) != -1){
                     /**
                      * 处理每对括号
                      */
-                    idx = value.indexOf(SYMBOL_BRACKET_LEFT, idx);
-                    String[] values = value.substring(idx + 1, value.indexOf(SYMBOL_BRACKET_RIGHT, idx)).split(SYMBOL_COMMA);
+                    idx = value.indexOf(STRING_BRACKET_LEFT, idx);
+                    String[] values = value.substring(idx + 1, value.indexOf(STRING_BRACKET_RIGHT, idx)).split(STRING_COMMA);
                     // 中心圆点经度
                     double lon = Double.valueOf(values[0]);
                     // 中心圆点纬度
@@ -1111,18 +1202,18 @@ public class SearchUtil {
                             .point(lat, lon).distance(distance, DistanceUnit.KILOMETERS));
 
                     // 遍历下1对括号
-                    idx = value.indexOf(SYMBOL_BRACKET_LEFT, idx);
+                    idx = value.indexOf(STRING_BRACKET_LEFT, idx);
                 }
             }
             // 中心圆的并集
             else if(geoType.equals(STR_GEO_DISTANCE_UNION)){
                 int idx = 0;
-                while(idx >=0 && value.indexOf(SYMBOL_BRACKET_LEFT, idx) != -1){
+                while(idx >=0 && value.indexOf(STRING_BRACKET_LEFT, idx) != -1){
                     /**
                      * 处理每对括号
                      */
-                    idx = value.indexOf(SYMBOL_BRACKET_LEFT, idx);
-                    String[] values = value.substring(idx + 1, value.indexOf(SYMBOL_BRACKET_RIGHT, idx)).split(SYMBOL_COMMA);
+                    idx = value.indexOf(STRING_BRACKET_LEFT, idx);
+                    String[] values = value.substring(idx + 1, value.indexOf(STRING_BRACKET_RIGHT, idx)).split(STRING_COMMA);
                     // 中心圆点经度
                     double lon = Double.valueOf(values[0]);
                     // 中心圆点纬度
@@ -1133,12 +1224,12 @@ public class SearchUtil {
                             .point(lat, lon).distance(distance, DistanceUnit.KILOMETERS));
 
                     // 遍历下1对括号
-                    idx = value.indexOf(SYMBOL_BRACKET_LEFT, idx);
+                    idx = value.indexOf(STRING_BRACKET_LEFT, idx);
                 }
             }
             // 矩形坐标查询
             else if(geoType.equals(STR_GEO_BOUNDING_BOX)){
-                String[] values = value.split(SYMBOL_COMMA);
+                String[] values = value.split(STRING_COMMA);
                 // 矩形左上角经度
                 double lonTopLeft = Double.valueOf(values[0]);
                 // 矩形左上角纬度
@@ -1154,12 +1245,12 @@ public class SearchUtil {
             // 矩形坐标交集
             else if(geoType.equals(STR_GEO_BOUNDING_BOX_INTERSECTION)){
                 int idx = 0;
-                while(idx >=0 && value.indexOf(SYMBOL_BRACKET_LEFT, idx) != -1){
+                while(idx >=0 && value.indexOf(STRING_BRACKET_LEFT, idx) != -1){
                     /**
                      * 处理每对括号
                      */
-                    idx = value.indexOf(SYMBOL_BRACKET_LEFT, idx);
-                    String[] values = value.split(SYMBOL_COMMA);
+                    idx = value.indexOf(STRING_BRACKET_LEFT, idx);
+                    String[] values = value.split(STRING_COMMA);
                     // 矩形左上角经度
                     double lonTopLeft = Double.valueOf(values[0]);
                     // 矩形左上角纬度
@@ -1173,18 +1264,18 @@ public class SearchUtil {
                             .setCorners(latTopLeft, lonTopLeft, latBottomRight, lonBottomRight));
 
                     // 遍历下1对括号
-                    idx = value.indexOf(SYMBOL_BRACKET_LEFT, idx);
+                    idx = value.indexOf(STRING_BRACKET_LEFT, idx);
                 }
             }
             // 矩形坐标并集
             else if(geoType.equals(STR_GEO_BOUNDING_BOX_UNION)){
                 int idx = 0;
-                while(idx >=0 && value.indexOf(SYMBOL_BRACKET_LEFT, idx) != -1){
+                while(idx >=0 && value.indexOf(STRING_BRACKET_LEFT, idx) != -1){
                     /**
                      * 处理每对括号
                      */
-                    idx = value.indexOf(SYMBOL_BRACKET_LEFT, idx);
-                    String[] values = value.split(SYMBOL_COMMA);
+                    idx = value.indexOf(STRING_BRACKET_LEFT, idx);
+                    String[] values = value.split(STRING_COMMA);
                     // 矩形左上角经度
                     double lonTopLeft = Double.valueOf(values[0]);
                     // 矩形左上角纬度
@@ -1198,7 +1289,7 @@ public class SearchUtil {
                             .setCorners(latTopLeft, lonTopLeft, latBottomRight, lonBottomRight));
 
                     // 遍历下1对括号
-                    idx = value.indexOf(SYMBOL_BRACKET_LEFT, idx);
+                    idx = value.indexOf(STRING_BRACKET_LEFT, idx);
                 }
             }
         }
@@ -1348,7 +1439,7 @@ public class SearchUtil {
                 dataCountResponse = this.client.search(dataCountRequest, RequestOptions.DEFAULT);
                 Map<String, Object> rowData = new HashMap<>(16);
 
-                for(Terms.Bucket bucket: ((Terms) dataCountResponse.getAggregations().getAsMap().get(STR_FLAG_COUNT)).getBuckets()){
+                for(Terms.Bucket bucket: ((Terms) dataCountResponse.getAggregations().getAsMap().get(STR_ES_KEYWORD_COUNT)).getBuckets()){
                     rowData.put(bucket.getKey().toString(), bucket.getDocCount());
                 }
                 data.put("counts", rowData);
@@ -1359,7 +1450,7 @@ public class SearchUtil {
         }
         catch (Exception e){
             e.printStackTrace();
-            logger.error("全文搜索字符串[ " + text + " ]失败！");
+//            logger.error("全文搜索字符串[ " + text + " ]失败！");
             return null;
         }
     }
@@ -1385,7 +1476,7 @@ public class SearchUtil {
      *                 矩形坐标交集： geo_bounding_box_intersection:field_name:(11.11,12.12,13.13,14.14),(21.21,22.22,23.23,24.24)   每对括号表示1个矩形，可以有多个矩形。  <br/>
      *                 矩形坐标并集： geo_bounding_box_union:field_name:(11.11,12.12,13.13,14.14),(21.21,22.22,23.23,24.24)   每对括号表示1个矩形，可以有多个矩形。  <br/>
      * @param analyzer （可选）文本分词器设置，目前可传入 ik_smart、ik_max_word 这2种特定分词，传入其他值或空字符串""则使用默认分词器
-     * @param rowNumStart 分页查询的开始行号（从0开始，值-1表示不分页）
+     * @param rowNumberStart 分页查询的开始行号（从0开始，值-1表示不分页）
      * @param rowsSize 每次获取的数量（值-1表示不限制数量）
      * @return 查询失败返回null
      */
@@ -1396,7 +1487,7 @@ public class SearchUtil {
                                  String fieldsToOrderBy,
                                  String geoLimit,
                                  String analyzer,
-                                 int rowNumStart, int rowsSize){
+                                 int rowNumberStart, int rowsSize){
         // 设置分词器
         setTextAnalyzer(analyzer);
 
@@ -1435,8 +1526,8 @@ public class SearchUtil {
         SearchRequest dataSearchRequest;
 
         // 分页设置
-        if(rowNumStart >= 0){
-            dataSearchSourceBuilder.from(rowNumStart);
+        if(rowNumberStart >= 0){
+            dataSearchSourceBuilder.from(rowNumberStart);
         }
         if(rowsSize >= 0){
             dataSearchSourceBuilder.size(rowsSize);
@@ -1473,8 +1564,8 @@ public class SearchUtil {
             indicesToQuery = indicesToQuery.replace(";", ",");
             HighlightBuilder highlightBuilder = new HighlightBuilder().preTags("<highlight>").postTags("</highlight>");
             String[] fieldNames = removeDuplicates(fieldsToHighlight.split(","));
-            if(SYMBOL_STAR.equals(fieldNames[0].trim())){
-                highlightBuilder.field(SYMBOL_STAR);
+            if(STRING_STAR.equals(fieldNames[0].trim())){
+                highlightBuilder.field(STRING_STAR);
             }
             else {
                 for (String fieldName : fieldNames) {
@@ -1560,7 +1651,7 @@ public class SearchUtil {
         }
         catch (Exception e){
             e.printStackTrace();
-            logger.error("全文搜索字符串[ " + text + " ]失败！");
+//            logger.error("全文搜索字符串[ " + text + " ]失败！");
             return null;
         }
     }

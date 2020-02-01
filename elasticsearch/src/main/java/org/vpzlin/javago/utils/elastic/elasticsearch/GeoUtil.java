@@ -58,13 +58,13 @@ public class GeoUtil {
      * init class witch connection to ElasticSearch server
      * @param serversIP the servers' IP to connect
      * @param serverPort the servers' port to connect, the default value is [9200]
-     * @param connectProtocol the servers' connection protocol to connect, the value supports [http] or [https], the default is [http]
+     * @param isHttpsProtocol if ElasticSearch JDBC server opened HTTPS protocol, set this to [true], otherwise set this to [false] which means [http] protocol
      * @param connectTimeout connection timeout seconds, the default value is [1800]
      * @param socketTimeout socket timeout seconds, the default value is [7200]
      * @throws Exception
      */
-    public GeoUtil(String[] serversIP, String serverPort, String connectProtocol, int connectTimeout, int socketTimeout) throws Exception{
-        Result result = ClientUtil.getClient(serversIP, serverPort, connectProtocol, connectTimeout, socketTimeout);
+    public GeoUtil(String[] serversIP, String serverPort, boolean isHttpsProtocol, int connectTimeout, int socketTimeout) throws Exception{
+        Result result = ClientUtil.getClient(serversIP, serverPort, isHttpsProtocol, connectTimeout, socketTimeout);
         if(result.isSuccess()){
             this.client = (RestHighLevelClient)result.getData();
         }
@@ -108,13 +108,13 @@ public class GeoUtil {
      * init class witch connection to ElasticSearch server
      * @param serverIP the server's IP to connect
      * @param serverPort the servers' port to connect, the default value is [9200]
-     * @param connectProtocol the servers' connection protocol to connect, the value supports [http] or [https], the default is [http]
+     * @param isHttpsProtocol if ElasticSearch JDBC server opened HTTPS protocol, set this to [true], otherwise set this to [false] which means [http] protocol
      * @param connectTimeout connection timeout seconds, the default value is [1800]
      * @param socketTimeout socket timeout seconds, the default value is [7200]
      * @throws Exception
      */
-    public GeoUtil(String serverIP, String serverPort, String connectProtocol, int connectTimeout, int socketTimeout) throws Exception{
-        Result result = ClientUtil.getClient(serverIP, serverPort, connectProtocol, connectTimeout, socketTimeout);
+    public GeoUtil(String serverIP, String serverPort, boolean isHttpsProtocol, int connectTimeout, int socketTimeout) throws Exception{
+        Result result = ClientUtil.getClient(serverIP, serverPort, isHttpsProtocol, connectTimeout, socketTimeout);
         if(result.isSuccess()){
             this.client = (RestHighLevelClient)result.getData();
         }

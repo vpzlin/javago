@@ -250,11 +250,10 @@ public class DocumentUtil {
 
     /**
      * close ElasticSearch connection client
-     * @param client the ElasticSearch connection client
      * @return
      */
-    public Result closeClient(RestHighLevelClient client){
-        return ClientUtil.closeClient(client);
+    public Result closeClient(){
+        return ClientUtil.closeClient(this.client);
     }
 
     /**
