@@ -29,7 +29,7 @@ public class ByteUtil {
      * @param bytes byte array
      * @return object from byte array
      */
-    public Object toObject (byte[] bytes) {
+    public static Object toObject (byte[] bytes) {
         Object obj = null;
         try {
             ByteArrayInputStream bis = new ByteArrayInputStream(bytes);

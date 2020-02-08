@@ -3,7 +3,7 @@ import org.vpzlin.javago.utils.FileUtil;
 import java.util.Arrays;
 import java.util.List;
 
-public class TestFile {
+public class TestFileUtil {
     public static void test01(){
         String filePath = "C:\\GreenPark\\UserFile\\Desktop\\project\\test\\1.txt";
         String pathDir = "C:\\GreenPark\\UserFile\\Desktop\\project\\test\\testDir";

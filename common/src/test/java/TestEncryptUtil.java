@@ -1,6 +1,6 @@
 import org.vpzlin.javago.utils.EncryptionUtil;
 
-public class TestEncrypt {
+public class TestEncryptUtil {
     public static void test01(){
         String text = "vpzlin";
         String key = "xm";
