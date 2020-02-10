@@ -7,6 +7,7 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.vpzlin.javago.utils.Result;
+import org.vpzlin.javago.utils.ByteUtil;
 
 import java.io.IOException;
 import java.util.*;
@@ -21,6 +22,19 @@ public class HBaseUtil {
     private int maxVersionNumber = HConstants.ALL_VERSIONS;
     // all threads use their Admin alone best
     private Admin admin;
+
+    /**
+     * transform array to String without bracket
+     * @param array array of String
+     * @return String
+     */
+    private static String transformArrayToStringWithoutBracket(String[] array){
+        if(array == null){
+            return null;
+        }
+
+        return Arrays.toString(array).replace("[", "").replace("]", "").replace(" ", "");
+    }
 
     /**
      * get current HBase connection
@@ -130,7 +144,7 @@ public class HBaseUtil {
         }
         tableName = tableName.trim();
         try {
-            if(!admin.isTableDisabled(TableName.valueOf(tableName)){
+            if(!admin.isTableDisabled(TableName.valueOf(tableName))){
                 return Result.getResult(true, null, String.format("It doesn't need to enable HBase table [%s] again, it has already been enabled.", tableName));
             }
             admin.enableTable(TableName.valueOf(tableName));
@@ -144,7 +158,7 @@ public class HBaseUtil {
     /**
      * drop HBase table
      * @param tableName table name
-     * @param forceDisableTable force disable table if is not disabled firstly
+     * @param forceDisableTable force disable table if it is not disabled firstly
      * @return
      */
     public Result dropTable(String tableName, boolean forceDisableTable){
@@ -182,9 +196,9 @@ public class HBaseUtil {
     }
 
     /**
-     * 获取HBase列族的压缩格式
-     * @param compressionType 压缩格式（自定义类）
-     * @return 压缩格式枚举（算法类）
+     * get compression type
+     * @param compressionType compression type
+     * @return enum of HBase table's compress type
      */
     private Compression.Algorithm getHBaseCompression(HBaseCompressionType compressionType){
         if(compressionType == null){
@@ -208,98 +222,36 @@ public class HBaseUtil {
     }
 
     /**
-     * 新建HBase表
-     * @param tableName 表名
-     * @param columnFamilyName 列族名
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名为空             <br/>
-     *      3:列族名为空           <br/>
-     *      4:最大数据版本数异常   <br/>
-     *      5:表已存在             <br/>
+     * create new HBase table
+     * @param tableName table name
+     * @param familyNames family names
+     * @param compressionType compression type, default value is [HBaseCompressionType.NONE]
+     * @param maxVersions max version of HBase table, default value is [HConstants.ALL_VERSIONS] which is equal to [2147483647]
+     * @return
      */
-    public int createTable(String tableName, String columnFamilyName){
-        String[] columnFamilyNames = {columnFamilyName};
-        return createTable(tableName, columnFamilyNames, HBaseCompressionType.NONE, maxVersionNumber);
-    }
-
-    /**
-     * 新建HBase表
-     * @param tableName 表名
-     * @param columnFamilyNames 列族名
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名为空             <br/>
-     *      3:列族名为空           <br/>
-     *      4:最大数据版本数异常   <br/>
-     *      5:表已存在             <br/>
-     */
-    public int createTable(String tableName, String[] columnFamilyNames){
-        return createTable(tableName, columnFamilyNames, HBaseCompressionType.NONE, defaultMaxVersion);
-    }
-
-    /**
-     * 新建HBase表
-     * @param tableName 表名
-     * @param columnFamilyName 列族名
-     * @param compressionType 压缩格式
-     * @param maxVersions 最大数据版本数
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名为空             <br/>
-     *      3:列族名为空           <br/>
-     *      4:最大数据版本数异常   <br/>
-     *      5:表已存在             <br/>
-     */
-    public int createTable(String tableName, String columnFamilyName, HBaseCompressionType compressionType, int maxVersions){
-        String[] columnFamilyNames = {columnFamilyName};
-        return createTable(tableName, columnFamilyNames, compressionType, maxVersions);
-    }
-
-    /**
-     * 新建HBase表
-     * @param tableName 表名
-     * @param columnFamilyNames 列族名集
-     * @param compressionType 压缩格式
-     * @param maxVersions 最大数据版本数
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名为空             <br/>
-     *      3:列族名为空           <br/>
-     *      4:最大数据版本数异常   <br/>
-     *      5:表已存在             <br/>
-     */
-    public int createTable(String tableName, String[] columnFamilyNames, HBaseCompressionType compressionType, int maxVersions){
+    public Result createTable(String tableName, String[] familyNames, HBaseCompressionType compressionType, int maxVersions){
         if(tableName == null || tableName.trim().length() == 0){
-            logger.error("新建HBase表失败！表名不能为空。");
-            return 2;
+            return Result.getResult(false, null, String.format("Failed to create new HBase table, table name can't be null or empty."));
         }
-        tableName = tableName.trim();
-        if(columnFamilyNames == null || columnFamilyNames.length == 0){
-            logger.error("新建HBase表失败！列族名不能为空。");
-            return 3;
+
+        if(familyNames == null || familyNames.length == 0){
+            return Result.getResult(false, null, String.format("Failed to create new HBase table [%s], family names can't be null or empty.", tableName));
         }
         if(maxVersions < 1){
-            logger.error("新建HBase表失败！最大数据版本数必须大于0。");
-            return 4;
+            return Result.getResult(false, null, String.format("Failed to create new HBase table [%s], max version of HBase table can't be less than [1].", tableName));
         }
         try {
             if (admin.tableExists(TableName.valueOf(tableName)) == true) {
-                logger.error("新建HBase表失败！表[" + tableName + "]已存在。");
-                return 5;
+                return Result.getResult(false, null, String.format("Failed to create new HBase table [%s], it already exists.", tableName));
             }
 
-            // 添加列族
+            // add family names
             Compression.Algorithm algorithm = getHBaseCompression(compressionType);
             TableDescriptorBuilder tableDescriptorBuilder = TableDescriptorBuilder.newBuilder(TableName.valueOf(tableName));
-            for (String columnFamilyName : columnFamilyNames) {
+            for (String columnFamilyName : familyNames) {
                 ColumnFamilyDescriptorBuilder columnFamilyDescriptorBuilder = ColumnFamilyDescriptorBuilder.newBuilder(
                         Bytes.toBytes(columnFamilyName));
-                // 指定了压缩算法格式
+                // assign compression type
                 if(compressionType != null){
                     columnFamilyDescriptorBuilder.setCompactionCompressionType(algorithm);
                 }
@@ -307,255 +259,175 @@ public class HBaseUtil {
                 tableDescriptorBuilder.setColumnFamily(columnFamilyDescriptorBuilder.build());
             }
             admin.createTable(tableDescriptorBuilder.build());
-            logger.info("成功新建了HBase表[" + tableName + "]，列族名为" + Arrays.toString(columnFamilyNames) + "。");
-            return 0;
+            return Result.getResult(true, null, String.format("Created new HBase table [%s] with family names [%s].", tableName, transformArrayToStringWithoutBracket(familyNames)));
         }
         catch (Exception e){
-            e.printStackTrace();
-            logger.error("新建了HBase表失败！表名为[" + tableName + "]，列族名为[" + Arrays.toString(columnFamilyNames) + "]。");
-            return 1;
+            return Result.getResult(false, null, String.format("Failed to create new HBase table [%s] with family names [%s], more info = [%s].", tableName, transformArrayToStringWithoutBracket(familyNames), e.getMessage()));
         }
     }
 
     /**
-     * 新建或重建HBase表
-     * @param tableName 表名
-     * @param columnFamilyName 列族名
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名不能为空         <br/>
-     *      3:列族名不能为空       <br/>
-     *      4:最大数据版本数异常   <br/>
+     * create new HBase table
+     * @param tableName table name
+     * @param familyNames family names
+     * @param compressionType compression type, default value is [HBaseCompressionType.NONE]
+     * @return
      */
-    public int createOrOverwriteTable(String tableName, String columnFamilyName){
-        String[] columnFamilyNames = {columnFamilyName};
-        return createOrOverwriteTable(tableName, columnFamilyNames, HBaseCompressionType.NONE, defaultMaxVersion);
+    public Result createTable(String tableName, String[] familyNames, HBaseCompressionType compressionType){
+        return createTable(tableName, familyNames, compressionType, maxVersionNumber);
     }
 
     /**
-     * 新建或重建HBase表
-     * @param tableName 表名
-     * @param columnFamilyNames 列族名
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名不能为空         <br/>
-     *      3:列族名不能为空       <br/>
-     *      4:最大数据版本数异常   <br/>
+     * create new HBase table
+     * @param tableName table name
+     * @param familyName family name
+     * @param compressionType compression type, default value is [HBaseCompressionType.NONE]
+     * @return
      */
-    public int createOrOverwriteTable(String tableName, String[] columnFamilyNames){
-        return createOrOverwriteTable(tableName, columnFamilyNames, HBaseCompressionType.NONE, defaultMaxVersion);
+    public Result createTable(String tableName, String familyName, HBaseCompressionType compressionType){
+        String[] familyNames = {familyName};
+        return createTable(tableName, familyNames, compressionType, maxVersionNumber);
     }
 
     /**
-     * 新建或重建HBase表
-     * @param tableName 表名
-     * @param columnFamilyName 列族名
-     * @param compressionType 压缩格式
-     * @param maxVersions 最大数据版本数
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名不能为空         <br/>
-     *      3:列族名不能为空       <br/>
-     *      4:最大数据版本数异常   <br/>
+     * create new HBase table
+     * @param tableName table name
+     * @param familyNames family names
+     * @return
      */
-    public int createOrOverwriteTable(String tableName, String columnFamilyName, HBaseCompressionType compressionType, int maxVersions){
-        String[] columnFamilyNames = {columnFamilyName};
-        return createOrOverwriteTable(tableName, columnFamilyNames, HBaseCompressionType.NONE, defaultMaxVersion);
+    public Result createTable(String tableName, String[] familyNames){
+        return createTable(tableName, familyNames, HBaseCompressionType.NONE, maxVersionNumber);
     }
 
     /**
-     * 新建或重建HBase表
-     * @param tableName 表名
-     * @param columnFamilyNames 列族名
-     * @param compressionType 压缩格式
-     * @param maxVersions 最大数据版本数
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名不能为空         <br/>
-     *      3:列族名不能为空       <br/>
-     *      4:最大数据版本数异常   <br/>
+     * create new HBase table
+     * @param tableName table name
+     * @param familyName family name
+     * @return
      */
-    public int createOrOverwriteTable(String tableName, String[] columnFamilyNames, HBaseCompressionType compressionType, int maxVersions){
+    public Result createTable(String tableName, String familyName){
+        String[] familyNames = {familyName};
+        return createTable(tableName, familyNames, HBaseCompressionType.NONE, maxVersionNumber);
+    }
+
+    /**
+     * delete HBase table
+     * @param tableName table name
+     * @return
+     */
+    public Result deleteTable(String tableName){
         if(tableName == null || tableName.trim().length() == 0){
-            logger.error("新建或重建HBase表失败！表名不能为空。");
-            return 2;
+            return Result.getResult(false, null, "Failed to delete HBase table, table name can't be null or empty.");
         }
-        tableName = tableName.trim();
-        if(columnFamilyNames == null || columnFamilyNames.length == 0){
-            logger.error("新建或重建HBase表失败！列族名不能为空。");
-            return 3;
-        }
-        if(maxVersions < 1){
-            logger.error("新建或重建HBase表失败！最大数据版本数必须大于0。");
-            return 4;
-        }
-        try {
-            if(admin.tableExists(TableName.valueOf(tableName)) == true){
-                logger.info("开始重建HBase表[" + tableName + "]，列族名为" + Arrays.toString(columnFamilyNames) + "。");
-                admin.disableTable(TableName.valueOf(tableName));
-                logger.info("成功禁用了HBase表[" + tableName + "]。");
-                admin.deleteTable(TableName.valueOf(tableName));
-                logger.info("成功删除了HBase表[" + tableName + "]。");
-            }
-            // 添加列族
-            Compression.Algorithm algorithm = getHBaseCompression(compressionType);
-            TableDescriptorBuilder tableDescriptorBuilder = TableDescriptorBuilder.newBuilder(TableName.valueOf(tableName));
-            for (String columnFamilyName : columnFamilyNames) {
-                ColumnFamilyDescriptorBuilder columnFamilyDescriptorBuilder = ColumnFamilyDescriptorBuilder.newBuilder(
-                        Bytes.toBytes(columnFamilyName));
-                // 指定了压缩算法格式
-                if(compressionType != null){
-                    columnFamilyDescriptorBuilder.setCompactionCompressionType(algorithm);
-                }
-                columnFamilyDescriptorBuilder.setMaxVersions(maxVersions);
-                tableDescriptorBuilder.setColumnFamily(columnFamilyDescriptorBuilder.build());
-            }
-            admin.createTable(tableDescriptorBuilder.build());
-            logger.info("成功新建了HBase表[" + tableName + "]，列族名为" + Arrays.toString(columnFamilyNames) + "。");
-            return 0;
-        }
-        catch (Exception e){
-            e.printStackTrace();
-            logger.info("新建或重建HBase表失败！表名为[" + tableName + "]，列族名为" + Arrays.toString(columnFamilyNames) + "。");
-            return 1;
-        }
-    }
-
-    /**
-     * 删除HBase表
-     * @param tableName 表名
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名不能为空         <br/>
-     *      3.表不存在             <br/>
-     */
-    public int deleteTable(String tableName){
-        if(tableName == null || tableName.trim().length() == 0){
-            logger.error("删除HBase表失败！表名不能为空。");
-            return 2;
-        }
-        tableName = tableName.trim();
 
         try {
-            logger.info("开始删除HBase表[" + tableName + "]。");
             if(admin.tableExists(TableName.valueOf(tableName)) == false){
-                logger.error("删除HBase表失败！表[" + tableName + "]不存在。");
-                return 3;
+                return Result.getResult(false, null, String.format("Failed to delete HBase table [%s], it doesn't exist.", tableName));
             }
-            admin.disableTable(TableName.valueOf(tableName));
-            logger.info("成功禁用了HBase表[" + tableName + "]。");
+
+            if(admin.isTableDisabled(TableName.valueOf(tableName)) == false){
+                admin.disableTable(TableName.valueOf(tableName));
+            }
             admin.deleteTable(TableName.valueOf(tableName));
-            logger.info("成功删除了HBase表[" + tableName + "]。");
-            return 0;
+            return Result.getResult(true, null, String.format("Deleted HBase table [%s].", tableName));
         }
         catch (Exception e){
-            e.printStackTrace();
-            logger.error("删除HBase表失败！表名=[" + tableName + "]。");
-            return 1;
+            return Result.getResult(false, null, String.format("Failed to delete HBase table [%s], more info = [%s].", tableName, e.getMessage()));
         }
     }
 
     /**
-     * 添加列族
-     * @param tableName 表名
-     * @param columnFamilyName 列族名
-     * @return 结果：                <br/>
-     *      0:成功                   <br/>
-     *      1:执行失败               <br/>
-     *      2:表名不能为空           <br/>
-     *      3:列族名不能为空         <br/>
-     *      4:最大数据版本数异常     <br/>
+     * add new column family names to HBase table
+     * @param tableName table name
+     * @param columnFamilyNames new column family names
+     * @param maxVersions max version of HBase table, default value is [HConstants.ALL_VERSIONS] which is equal to [2147483647]
+     * @param compressionType compression type, default value is [HBaseCompressionType.NONE], this parameter can be null
+     * @return
      */
-    public int addColumnFamily(String tableName, String columnFamilyName){
-        String[] columnFamilyNames = {columnFamilyName};
-        return addColumnFamilies(tableName, columnFamilyNames, HBaseCompressionType.NONE, defaultMaxVersion);
-    }
-
-    /**
-     * 添加列族
-     * @param tableName 表名
-     * @param columnFamilyNames 列族名
-     * @return 结果：                <br/>
-     *      0:成功                   <br/>
-     *      1:执行失败               <br/>
-     *      2:表名不能为空           <br/>
-     *      3:列族名不能为空         <br/>
-     *      4:最大数据版本数异常     <br/>
-     */
-    public int addColumnFamilies(String tableName, String[] columnFamilyNames){
-        return addColumnFamilies(tableName, columnFamilyNames, HBaseCompressionType.NONE, defaultMaxVersion);
-    }
-
-    /**
-     * 添加列族
-     * @param tableName 表名
-     * @param columnFamilyNames 列族名
-     * @param compressionType 压缩格式
-     * @param maxVersions 最大数据版本数
-     * @return 结果：                <br/>
-     *      0:成功                   <br/>
-     *      1:执行失败               <br/>
-     *      2:表名不能为空           <br/>
-     *      3:列族名不能为空         <br/>
-     *      4:最大数据版本数异常     <br/>
-     */
-    public int addColumnFamilies(String tableName, String[] columnFamilyNames, HBaseCompressionType compressionType, int maxVersions){
+    public Result addColumnFamilies(String tableName, String[] columnFamilyNames, int maxVersions, HBaseCompressionType compressionType){
         if(tableName == null || tableName.trim().length() == 0){
-            logger.error("添加列族失败！表名不能为空。");
-            return 2;
+            return Result.getResult(false, null, String.format("Failed to add new column family names to HBase table, table name can't be null or empty."));
         }
-        tableName = tableName.trim();
+
         if(columnFamilyNames == null || columnFamilyNames.length == 0){
-            logger.error("添加列族失败！列族名不能为空。");
-            return 3;
+            return Result.getResult(false, null, String.format("Failed to add new column family names to HBase table [%s], table name can't be null or empty.", tableName));
         }
+
         if(maxVersions < 1){
-            logger.error("添加列族失败！最大数据版数必须大于0。");
-            return 4;
+            return Result.getResult(false, null, String.format("Failed to add new column family names [%s] to HBase table [%s], max version number can't be less than [1].", transformArrayToStringWithoutBracket(columnFamilyNames), tableName));
         }
-        // 添加列族
-        Compression.Algorithm algorithm = getHBaseCompression(compressionType);
+
+        /**
+         * add column family names
+         */
         try {
             for (String columnFamilyName : columnFamilyNames) {
                 ColumnFamilyDescriptorBuilder columnFamilyDescriptorBuilder = ColumnFamilyDescriptorBuilder.newBuilder(Bytes.toBytes(columnFamilyName));
                 if(compressionType != null){
+                    Compression.Algorithm algorithm = getHBaseCompression(compressionType);
                     columnFamilyDescriptorBuilder.setCompactionCompressionType(algorithm);
                 }
                 columnFamilyDescriptorBuilder.setMaxVersions(maxVersions);
 
                 admin.addColumnFamily(TableName.valueOf(tableName), columnFamilyDescriptorBuilder.build());
-                logger.info("成功添加了表[" + tableName + "]的列族[" + columnFamilyName + "]。");
             }
-            return 0;
+            return Result.getResult(true, null, String.format("Added new column family names [%s] to HBase table [%s].", transformArrayToStringWithoutBracket(columnFamilyNames), tableName));
         }
         catch (Exception e){
-            e.printStackTrace();
-            logger.error("添加表[" + tableName + "]的列族失败！列族名为" + Arrays.toString(columnFamilyNames) + "。");
-            return 1;
+            return Result.getResult(false, null, String.format("Failed to add new column family names [%s] to HBase table [%s], more info = [%s].", transformArrayToStringWithoutBracket(columnFamilyNames), tableName, e.getMessage()));
         }
     }
 
     /**
-     * 获取HBase表的列族名
-     * @param tableName 表名
-     * @return 列族名数组                    <br/>
-     *         null: 表不存在 或 执行失败    <br/>
+     * add new column family names to HBase table
+     * @param tableName table name
+     * @param columnFamilyNames new column family names
+     * @return
      */
-    public List<String> getTableColumnFamilyNames(String tableName){
+    public Result addColumnFamilies(String tableName, String[] columnFamilyNames){
+        return addColumnFamilies(tableName, columnFamilyNames, maxVersionNumber, null);
+    }
+
+    /**
+     * add new column family name to HBase table
+     * @param tableName table name
+     * @param columnFamilyName new column family name
+     * @param maxVersions max version of HBase table, default value is [HConstants.ALL_VERSIONS] which is equal to [2147483647]
+     * @param compressionType compression type, default value is [HBaseCompressionType.NONE], this parameter can be null
+     * @return
+     */
+    public Result addColumnFamily(String tableName, String columnFamilyName, int maxVersions, HBaseCompressionType compressionType){
+        String[] columnFamilyNames = {columnFamilyName};
+        return addColumnFamilies(tableName, columnFamilyNames, maxVersions, compressionType);
+    }
+
+    /**
+     * add new column family name to HBase table
+     * @param tableName table name
+     * @param columnFamilyName new column family name
+     * @return
+     */
+    public Result addColumnFamily(String tableName, String columnFamilyName){
+        String[] columnFamilyNames = {columnFamilyName};
+        return addColumnFamilies(tableName, columnFamilyNames, maxVersionNumber, null);
+    }
+
+    /**
+     * get column family names of HBase table
+     * @param tableName table name
+     * @return the type of Result.data is [List<String>]
+     */
+    public Result getColumnFamilyNames(String tableName){
         if(tableName == null || tableName.trim().length() == 0){
-            logger.error("获取HBase表的列族名失败！表名不能为空。");
-            return null;
+            return Result.getResult(false, null, "Failed to get column family names of HBase table, table name can't be null or empty.");
         }
-        tableName = tableName.trim();
+
         try {
+            if(admin.tableExists(TableName.valueOf(tableName)) == false){
+                return Result.getResult(false, null, String.format("Failed to get column family names of HBase table [%s], the table doesn't exist.", tableName));
+            }
             if(admin.isTableAvailable(TableName.valueOf(tableName)) == false){
-                logger.error("获取HBase表[" + tableName + "]的列族名失败！该表目前不可用。");
-                return null;
+                return Result.getResult(false, null, String.format("Failed to get column family names of HBase table [%s], the table isn't available.", tableName));
             }
             Table table = connection.getTable(TableName.valueOf(tableName));
             TableDescriptor tableDescriptor = table.getDescriptor();
@@ -565,214 +437,184 @@ public class HBaseUtil {
                 columnFamilyNamesList.add(Bytes.toString(columnFamilyName));
             }
 
-            return columnFamilyNamesList;
+            return Result.getResult(true, columnFamilyNamesList, String.format("Got column family names [%s] of HBase table [%s].", transformArrayToStringWithoutBracket((String[])columnFamilyNamesList.toArray()), tableName));
         }
         catch (Exception e){
-            e.printStackTrace();
-            logger.error("获取HBase表[" + tableName + "]的列族名失败！");
-            return null;
+            return Result.getResult(false, null, String.format("Failed to get column family names of HBase table [%s], more info = [%s].", tableName, e.getMessage()));
         }
     }
 
     /**
-     * 删除列族
-     * @param tableName 表名
-     * @param columnFamilyName 列族名
-     * @return 结果：          <br/>
-     *      0:成功             <br/>
-     *      1:执行失败         <br/>
-     *      2:表名不能为空     <br/>
-     *      3:列族名不能为空   <br/>
+     * delete column family names of HBase table
+     * @param tableName table name
+     * @param columnFamilyNames column family names
+     * @return
      */
-    public int deleteColumnFamily(String tableName, String columnFamilyName){
-        String[] columnFamilyNames = {columnFamilyName};
-        return deleteColumnFamilies(tableName, columnFamilyNames);
-    }
-
-    /**
-     * 删除列族
-     * @param tableName 表名
-     * @param columnFamilyNames 列族名
-     * @return 结果：          <br/>
-     *      0:成功             <br/>
-     *      1:执行失败         <br/>
-     *      2:表名不能为空     <br/>
-     *      3:列族名不能为空   <br/>
-     */
-    public int deleteColumnFamilies(String tableName, String[] columnFamilyNames){
+    public Result deleteColumnFamilies(String tableName, String[] columnFamilyNames){
         if(tableName == null || tableName.trim().length() == 0){
-            logger.error("删除列族失败！表名不能为空。");
-            return 2;
+            return Result.getResult(false, null, "Failed to delete column family names of HBase table, table name can't be null or empty.");
         }
-        tableName = tableName.trim();
+
         if(columnFamilyNames == null || columnFamilyNames.length == 0){
-            logger.error("删除列族失败！列族名不能为空。");
-            return 3;
+            return Result.getResult(false, null, String.format("Failed to delete column family names of HBase table [%s], column family names can't be null or empty.", tableName));
         }
 
         try {
             for (String columnFamilyName : columnFamilyNames) {
                 admin.deleteColumnFamily(TableName.valueOf(tableName), columnFamilyName.getBytes("UTF-8"));
-                logger.info("成功删除了表[" + tableName + "]的列族[" + columnFamilyName + "]。");
             }
-            return 0;
+            return Result.getResult(true, null, String.format("Deleted column family names [%s] of HBase table [%s].", transformArrayToStringWithoutBracket(columnFamilyNames), tableName));
         }
         catch (Exception e){
-            e.printStackTrace();
-            logger.error("删除HBase表[" + tableName + "]的列族失败！");
-            return 1;
+            return Result.getResult(false, null, String.format("Failed to delete column family names [%s] of HBase table [%s], more info = [%s].", transformArrayToStringWithoutBracket(columnFamilyNames), tableName, e.getMessage()));
         }
     }
 
     /**
-     * 更新列族
-     * @param tableName 表名
-     * @param columnFamilyName 列族名
-     * @param compressionType 压缩格式
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名不能为空         <br/>
-     *      3.列族名不能为空       <br/>
+     * delete column family name of HBase table
+     * @param tableName table name
+     * @param columnFamilyName column family name
+     * @return
      */
-    public int updateColumnFamily(String tableName, String columnFamilyName, HBaseCompressionType compressionType){
-        return updateColumnFamily(tableName, columnFamilyName, compressionType, 0);
+    public Result deleteColumnFamily(String tableName, String columnFamilyName){
+        String[] columnFamilyNames = {columnFamilyName};
+        return deleteColumnFamilies(tableName, columnFamilyNames);
     }
 
     /**
-     * 更新列族
-     * @param tableName 表名
-     * @param columnFamilyName 列族名
-     * @param maxVersions 最大数据版本数
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名不能为空         <br/>
-     *      3:列族名不能为空       <br/>
+     * update column family name of HBase table
+     * @param tableName table name
+     * @param columnFamilyName new column family name
+     * @param maxVersions max version of column family, default value is [HConstants.ALL_VERSIONS] which is equal to [2147483647]
+     * @param compressionType compression type, default value is [HBaseCompressionType.NONE], this parameter can be null
+     * @return
      */
-    public int updateColumnFamily(String tableName, String columnFamilyName, int maxVersions){
-        return updateColumnFamily(tableName, columnFamilyName, null, maxVersions);
-    }
-
-    /**
-     * 更新列族
-     * @param tableName 表名
-     * @param columnFamilyName 列族名
-     * @param compressionType 压缩格式
-     * @param maxVersions 最大数据版本数（值0表示不做更新）
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名不能为空         <br/>
-     *      3.列族名不能为空       <br/>
-     */
-    public int updateColumnFamily(String tableName, String columnFamilyName, HBaseCompressionType compressionType, int maxVersions){
+    public Result updateColumnFamily(String tableName, String columnFamilyName, int maxVersions, HBaseCompressionType compressionType){
         if(tableName == null || tableName.trim().length() == 0){
-            logger.error("更新列族失败！表名不能为空。");
-            return 2;
-        }
-        tableName = tableName.trim();
-        if(columnFamilyName == null || columnFamilyName.trim().length() == 0){
-            logger.error("更新列族失败！列族名不能为空。");
-            return 3;
+            return Result.getResult(false, null, "Failed to update column family name of HBase table, table name can't be null or empty.");
         }
 
-        // 添加列族
-        Compression.Algorithm algorithm = getHBaseCompression(compressionType);
-        StringBuilder sb = new StringBuilder();
+        if(columnFamilyName == null || columnFamilyName.trim().length() == 0){
+            return Result.getResult(false, null, "Failed to update column family name of HBase table, column family name can't be null or empty.");
+        }
+
         try {
             ColumnFamilyDescriptorBuilder columnFamilyDescriptorBuilder = ColumnFamilyDescriptorBuilder.newBuilder(columnFamilyName.getBytes());
+            columnFamilyDescriptorBuilder.setMaxVersions(maxVersions);
+            StringBuilder sb = new StringBuilder(String.format("max version of column family = [%s]", maxVersions));
             if(compressionType != null){
+                Compression.Algorithm algorithm = getHBaseCompression(compressionType);
                 columnFamilyDescriptorBuilder.setCompactionCompressionType(algorithm);
-                sb.append("压缩算法为" + compressionType.name() + "。");
+                sb.append(String.format(", compression type of column family = [%s]", compressionType.toString()));
             }
-            if(maxVersions > 0) {
-                columnFamilyDescriptorBuilder.setMaxVersions(maxVersions);
-                sb.append("最大数据版本数为[" + maxVersions + "]。");
-            }
+
             admin.modifyColumnFamily(TableName.valueOf(tableName), columnFamilyDescriptorBuilder.build());
-            logger.info("更新表[" + tableName + "]列族[" + columnFamilyName + "]的属性成功。" + sb.toString());
-            return 0;
+            return Result.getResult(true, null, String.format("Updated column family name [%s] of HBase table [%s], %s.", columnFamilyName, tableName, sb.toString()));
         }
         catch (Exception e){
-            e.printStackTrace();
-            logger.error("更新表[" + tableName + "]列族[" + columnFamilyName + "]的属性失败！" + sb.toString());
-            return 1;
+            return Result.getResult(false, null, String.format("Failed to update column family name [%s] of HBase table [%s], more info = [%s].", columnFamilyName, tableName, e.getMessage()));
         }
     }
 
     /**
-     * 添加HBase表数据
-     * @param tableName 表名
-     * @param rowkey 主键
-     * @param columnFamilyName 列族名
-     * @param data 字段名、字段值的键值对
-     * @return 结果：              <br/>
-     *      0:成功                 <br/>
-     *      1:执行失败             <br/>
-     *      2:表名为空             <br/>
-     *      3:RowKey为空           <br/>
-     *      4:列族名为空           <br/>
-     *      5:待插入数据为空       <br/>
+     * get HBase table names
+     * @param namespace namespace's name
+     * @return the type of Result.data is [List<String>]
      */
-    public int addRow(String tableName, String rowkey, String columnFamilyName, Map<String, String> data){
+    public Result getTableNames(String namespace){
+        String moreTip = "";
+        try {
+
+            TableName[] tableNames;
+            // if not assigned namespace, get all HBase table names
+            if(namespace == null || namespace.trim().length() == 0) {
+                tableNames = admin.listTableNames();
+            }
+            // if assigned namespace, get HBase table names of it
+            else {
+                tableNames = admin.listTableNamesByNamespace(namespace);
+                moreTip = String.format(" from namespace [%s]", namespace);
+            }
+
+            List<String> tableNamesList = new LinkedList<>();
+            for(TableName tableName: tableNames){
+                tableNamesList.add(tableName.getNameAsString());
+            }
+            return Result.getResult(true, tableNamesList, String.format("Got HBase table names [%s]%s.", transformArrayToStringWithoutBracket((String[])tableNamesList.toArray()), moreTip));
+        }
+        catch (Exception e){
+            return Result.getResult(false, null, String.format("Failed to get table names%s, more info = [%s].", namespace, e.getMessage()));
+        }
+    }
+
+    /**
+     * update column family name of HBase table
+     * @param tableName table name
+     * @param columnFamilyName new column family name
+     * @return
+     */
+    public Result updateColumnFamily(String tableName, String columnFamilyName){
+        return updateColumnFamily(tableName, columnFamilyName, maxVersionNumber, null);
+    }
+
+    /**
+     * add row to HBase table
+     * @param tableName table name
+     * @param rowkey RowKey
+     * @param columnFamilyName column family name
+     * @param data data map
+     * @return
+     */
+    public Result addDataRow(String tableName, String rowkey, String columnFamilyName, Map<String, Object> data){
         if(tableName == null || tableName.trim().length() == 0){
-            logger.error("添加HBase表数据失败！表名不能为空。");
-            return 2;
+            return Result.getResult(false, null, "Failed to add row to HBase table, table name can't be null or empty.");
         }
-        tableName = tableName.trim();
+
         if(rowkey == null || rowkey.trim().length() == 0){
-            logger.error("添加HBase表数据失败！RowKey为空。");
-            return 3;
+            return Result.getResult(false, null, String.format("Failed to add row to HBase table [%s], rowkey can't be null or empty.", tableName));
         }
-        rowkey = rowkey.trim();
+
         if(columnFamilyName == null || columnFamilyName.trim().length() == 0){
-            logger.error("添加HBase表数据失败！列族名为空。");
-            return 4;
+            return Result.getResult(false, null, String.format("Failed to add row with rowkey [%s] to HBase table [%s], column family name can't be null or empty.", rowkey, tableName));
         }
-        columnFamilyName = columnFamilyName.trim();
+
         if(data == null || data.size() == 0){
-            logger.error("添加HBase表数据失败！RowKey为空。");
-            return 5;
+            return Result.getResult(false, null, String.format("Failed to add row with rowkey [%s] to HBase table [%s], data map can't be null or empty.", rowkey, tableName));
         }
 
         try {
             Table table = connection.getTable(TableName.valueOf(tableName));
             Put put = new Put(rowkey.getBytes());
-            // 添加字段值
-            for(Map.Entry<String, String> entry: data.entrySet()){
-                put.addColumn(columnFamilyName.getBytes(), entry.getKey().getBytes(), entry.getValue().getBytes());
+            for(Map.Entry<String, Object> entry: data.entrySet()){
+                put.addColumn(columnFamilyName.getBytes(), entry.getKey().getBytes(), ByteUtil.toByteArray(entry.getValue()));
             }
             table.put(put);
             table.close();
-            return 0;
+
+            return Result.getResult(true, false, String.format("Added row with rowkey [%s] to HBase table [%s].", rowkey, tableName));
         }
         catch (Exception e) {
-            e.printStackTrace();
-            logger.error("添加HBase表数据失败！表名为[" + tableName + "]，RowKey为[" + rowkey + "]，列族名为[" + columnFamilyName + "]。");
-            return 1;
+            return Result.getResult(false, false, String.format("Failed to add row with rowkey [%s] to HBase table [%s], more info = [%s].", rowkey, tableName, e.getMessage()));
         }
     }
 
     /**
-     * 获取HBase表数据行
-     * @param tableName 表名
-     * @param rowkey 主键
-     * @return 字段键值对的Map
-     * @throws
+     * get row data from HBase table
+     * @param tableName table name
+     * @param rowkey RowKey of each row
+     * @return the type of Result.data is [Map<String, Object>]
      */
-    public Map<String, String> getRow(String tableName, String rowkey) throws Exception{
+    public Result getDataRow(String tableName, String rowkey){
         if(tableName == null || tableName.trim().length() == 0){
-            throw new Exception("获取HBase表数据行失败！表名不能为空。");
+            return Result.getResult(false, null, String.format("Failed to get row data from HBase table, table name can't be null or empty."));
         }
-        tableName = tableName.trim();
+
         if(rowkey == null || rowkey.trim().length() == 0){
-            throw new Exception("获取HBase表数据行失败！RowKey为空。");
+            return Result.getResult(false, null, String.format("Failed to get row data from HBase table [%s], rowkey can't be null or empty.", tableName));
         }
-        rowkey = rowkey.trim();
 
         try {
-            Map<String, String> row = new HashMap<>();
+            Map<String, Object> row = new HashMap<>();
             Table table = connection.getTable(TableName.valueOf(tableName));
             Get get = new Get(rowkey.getBytes());
             org.apache.hadoop.hbase.client.Result result = table.get(get);
@@ -783,33 +625,26 @@ public class HBaseUtil {
                 }
             }
             table.close();
-            return row;
+            return Result.getResult(true, row, String.format("Got row data from HBase table [%s] by rowkey [%s].", tableName, rowkey));
         }
         catch (Exception e){
-            e.printStackTrace();
-            return null;
+            return Result.getResult(false, null, String.format("Failed to get row data from HBase table [%s] by rowkey [%s], more info = [%s].", tableName, rowkey, e.getMessage()));
         }
     }
 
     /**
-     * 删除HBase表数据行
-     * @param tableName 表名
-     * @param rowkey 主键
-     * @return 结果：          <br/>
-     *      0:正常             <br/>
-     *      1:失败             <br/>
-     *      2:表名为空         <br/>
-     *      3:RowKey为空       <br/>
+     * delete row from HBase table
+     * @param tableName table name
+     * @param rowkey RowKey
+     * @return
      */
-    public int deleteRow(String tableName, String rowkey){
+    public Result deleteDataRow(String tableName, String rowkey){
         if(tableName == null || tableName.trim().length() == 0){
-            logger.error("删除HBase表数据行失败！表名不能为空");
-            return 2;
+            return Result.getResult(false, null, String.format("Failed to delete row from HBase table, table name can't be null or empty."));
         }
-        tableName = tableName.trim();
+
         if(rowkey == null || rowkey.trim().length() == 0){
-            logger.error("删除HBase表数据行失败！RowKey不能为空");
-            return 3;
+            return Result.getResult(false, null, String.format("Failed to delete row from HBase table [%s], rowkey can't be null or empty.", tableName));
         }
         rowkey = rowkey.trim();
 
@@ -817,89 +652,47 @@ public class HBaseUtil {
             Table table = connection.getTable(TableName.valueOf(tableName));
             Delete delete = new Delete(rowkey.getBytes());
             table.delete(delete);
-            logger.debug("删除了HBase表[" + tableName + "]中RowKey为[" + rowkey + "]的数据。");
             table.close();
-            return 0;
+            return Result.getResult(true, null, String.format("Deleted row from HBase table [%s] by rowkey [%s].", tableName, rowkey));
         }
         catch (Exception e){
-            e.printStackTrace();
-            logger.error("删除HBase表数据行失败！");
-            return 1;
+            return Result.getResult(false, null, String.format("Failed to delete row from HBase table [%s] by rowkey [%s].", tableName, rowkey));
         }
     }
 
     /**
-     * 获取HBase中的表名
-     * @return 表名list。如果没有表则list.size()=0 ；如果执行失败，则 list = null
+     * get rows data from HBase table
+     * @param tableName table name
+     * @param columns columns' map </br>
+     *                the key is column family name, the value is column name
+     * @param rowkeyPrefixFilter rowkey prefix filter to scan
+     * @return the type of Result.data is [Map<String, Object>]  </br>
+     *         the key of Map is [rowkey]
+     *         the value of map is [Map<String, Object>], which key is [field name] and value is [field value]
      */
-    public List<String> getTableNames(){
-        return getTableNames(null);
-    }
-
-    /**
-     * 获取HBase中的表名
-     * @param namespace 指定表的命名空间，null表示不指定
-     * @return 表名list。如果没有表则list.size()=0 ；如果执行失败，则 list = null
-     */
-    public List<String> getTableNames(String namespace){
-        List<String> tableNamesList = new LinkedList<>();
-        try {
-            TableName[] tableNames;
-            // 未指定namespace，获取所有表名
-            if(namespace == null || namespace.trim().length() == 0) {
-                tableNames = admin.listTableNames();
-            }
-            // 指定namespace
-            else {
-                tableNames = admin.listTableNamesByNamespace(namespace);
-            }
-
-            for(TableName tableName: tableNames){
-                tableNamesList.add(tableName.getNameAsString());
-            }
-            return tableNamesList;
-        }
-        catch (Exception e){
-            e.printStackTrace();
-            logger.error("获取HBase中的表名失败！");
-            return null;
-        }
-    }
-
-    /**
-     * 扫描HBase表的数据
-     * @param tableName 表名
-     * @param columnNames 指定要获取值的列，key为列族，value
-     * @param rowkeyStartWith 指定要扫描数据RowKey的开头
-     * @return 执行失败返回 null，否则返回map键值对的嵌套。map.size() = 0 不是执行失败，表示未获取到数据。 <br/>
-     *      Map<String, object>                    <br/>
-     *          key: RowKey                        <br/>
-     *          value: Map<String, String>         <br/>
-     *                     key: 字段名            <br/>
-     *                     value: 字段值          <br/>
-     */
-    public Map<String, Object> scanData(String tableName, Map<String, String> columnNames, String rowkeyStartWith){
+    public Result getDataRows(String tableName, Map<String, String> columns, String rowkeyPrefixFilter){
         Map<String, Object> data = new HashMap<>();
         try {
             Table table = connection.getTable(TableName.valueOf(tableName));
             Scan scan = new Scan();
-            // 指定要获取值的列
-            if(columnNames != null && columnNames.size() > 0){
-                for(Map.Entry<String, String> columnName: columnNames.entrySet()){
-                    // 字段名为空
-                    if(columnName.getValue() == null || columnName.getValue().trim().length() == 0){
-                        logger.error("扫描HBase表的数据失败！传入了有列族名[" + columnName.getKey() + "]但没有列名的字段。");
-                        return null;
+            // if assigned fields to get
+            if(columns != null && columns.size() > 0){
+                for(Map.Entry<String, String> columnName: columns.entrySet()){
+                    // check if fields assigned exists, column name can't be null
+                    if((columnName.getValue() == null || columnName.getValue().trim().length() == 0)){
+                        return Result.getResult(false, null, String.format("Failed to get rows data from HBase table [%s], the columns' map contains [null] value by key [%s].", tableName, columnName.getKey()));
                     }
                     scan.addColumn(columnName.getKey().getBytes(), columnName.getValue().getBytes());
                 }
             }
-            // 指定要扫描数据RowKey的开头
-            if(rowkeyStartWith != null && rowkeyStartWith.trim().length() > 0){
-                scan.setRowPrefixFilter(rowkeyStartWith.trim().getBytes());
+            // if assigned rowkey prefix filter to scan
+            if(rowkeyPrefixFilter != null && rowkeyPrefixFilter.trim().length() > 0){
+                scan.setRowPrefixFilter(rowkeyPrefixFilter.trim().getBytes());
             }
 
-            // 开始扫描
+            /**
+             * begin to scan
+             */
             ResultScanner results = table.getScanner(scan);
             for(org.apache.hadoop.hbase.client.Result result = results.next(); result != null; result = results.next()){
                 String rowkey = Bytes.toString(result.getRow());
@@ -915,12 +708,10 @@ public class HBaseUtil {
             }
             results.close();
             table.close();
-            return data;
+            return Result.getResult(true, data, String.format("Got rows data from HBase table [%s].", tableName));
         }
         catch (Exception e){
-            e.printStackTrace();
-            logger.error("扫描HBase表的数据失败！");
-            return null;
+            return Result.getResult(true, data, String.format("Failed to get rows data from HBase table [%s], more info = [%s].", tableName, e.getMessage()));
         }
     }
 }

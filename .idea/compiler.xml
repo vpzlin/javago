@@ -14,12 +14,12 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="8">
-      <module name="common" target="1.5" />
+      <module name="common" target="8" />
       <module name="elasticsearch" target="8" />
-      <module name="hbase" target="1.5" />
-      <module name="hive" target="1.5" />
-      <module name="impala" target="1.5" />
-      <module name="javago" target="1.5" />
+      <module name="hbase" target="8" />
+      <module name="hive" target="8" />
+      <module name="impala" target="8" />
+      <module name="javago" target="8" />
     </bytecodeTargetLevel>
   </component>
 </project>
