@@ -8,7 +8,6 @@ public class testClient {
         String connectProtocol = "http";
 
 //        System.out.println(ClientUtil.getClient(serverIp, serverPort).getMessage());
-        System.out.println(ClientUtil.getClient(serversIp, serverPort).getMessage());
     }
 
     public static void main(String[] args){

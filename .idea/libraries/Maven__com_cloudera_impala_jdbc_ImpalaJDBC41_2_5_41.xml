@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.cloudera.impala.jdbc:ImpalaJDBC41:2.5.41">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../maven/repository/com/cloudera/impala/jdbc/ImpalaJDBC41/2.5.41/ImpalaJDBC41-2.5.41.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/../maven/repository/com/cloudera/impala/jdbc/ImpalaJDBC41/2.5.41/ImpalaJDBC41-2.5.41-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../maven/repository/com/cloudera/impala/jdbc/ImpalaJDBC41/2.5.41/ImpalaJDBC41-2.5.41-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

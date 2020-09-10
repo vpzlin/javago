@@ -6,11 +6,11 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="hive" />
         <module name="impala" />
         <module name="common" />
-        <module name="hbase" />
         <module name="elasticsearch" />
-        <module name="hive" />
+        <module name="hbase" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="8">
