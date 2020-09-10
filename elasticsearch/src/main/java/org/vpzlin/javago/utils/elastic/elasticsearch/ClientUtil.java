@@ -59,6 +59,45 @@ public class ClientUtil {
 
     /**
      * get connection to ElasticSearch server
+     * @param serversIpPorts servers' ip and ports such as "192.168.100.1:9200"
+     * @param isHttpsProtocol the servers' connection protocol to connect, the value supports [http] or [https], the default is [http]
+     * @param connectTimeout connection timeout seconds, the default value is [1800]
+     * @param socketTimeout socket timeout seconds, the default value is [7200]
+     * @return the type of Result.data is [RestHighLevelClient]
+     */
+    public static Result getClient(String[] serversIpPorts, boolean isHttpsProtocol, int connectTimeout, int socketTimeout){
+        String connectProtocol = "http";
+        if(isHttpsProtocol == true){
+            connectProtocol = "https";
+        }
+
+        try {
+            HttpHost[] httpHosts = new HttpHost[serversIpPorts.length];
+            for (int i = 0; i < serversIpPorts.length; i++){
+                String[] args = serversIpPorts[i].trim().split(":");
+                httpHosts[i] = new HttpHost(args[0], Integer.parseInt(args[1]), connectProtocol);
+            }
+
+            RestHighLevelClient client = new RestHighLevelClient(
+                    RestClient.builder(httpHosts)
+                            .setRequestConfigCallback(
+                                    new RestClientBuilder.RequestConfigCallback() {
+                                        @Override
+                                        public RequestConfig.Builder customizeRequestConfig(RequestConfig.Builder builder) {
+                                            return builder.setConnectTimeout(connectTimeout).setSocketTimeout(socketTimeout);
+                                        }
+                                    }
+                            )
+            );
+            return Result.getResult(true, client, String.format("Connected to ElasticSearch server [%s], the protocol is [%s].", Arrays.toString(serversIpPorts).replace("[", "").replace("]", ""), connectProtocol));
+        }
+        catch (Exception e){
+            return Result.getResult(false, null, String.format("Failed to connect to ElasticSearch server [%s], the protocol is [%s], more info = [%s].", Arrays.toString(serversIpPorts).replace("[", "").replace("]", ""), connectProtocol, e.getMessage()));
+        }
+    }
+
+    /**
+     * get connection to ElasticSearch server
      * @param serversIP the servers' IP to connect
      * @param serverPort the servers' port to connect, the default value is [9200]
      * @param isHttpsProtocol the servers' connection protocol to connect, the value supports [http] or [https], the default is [http]
