@@ -13,36 +13,22 @@ import java.util.Properties;
 public class ConsumerUtil {
     KafkaConsumer<String, String> kafkaConsumer;
 
-    public ConsumerUtil(String ipAndPorts, String topic, String groupId){
-        setConsumer(ipAndPorts, topic, groupId);
+    public ConsumerUtil(String kafkaHostAndPorts, String topicName, String groupId){
+        this.kafkaConsumer = new KafkaConsumer<String, String>(getKafkaServerProperties(kafkaHostAndPorts, groupId));
+        this.kafkaConsumer.subscribe(Arrays.asList(topicName));
     }
 
-    /**
-     * 设置消费者
-     * @param hostAndPorts 主机和端口集，格式如： server1:9092,server2:9092
-     * @param topic 主题
-     * @param groupId 消费者组ID
-     */
-    public void setConsumer(String hostAndPorts, String topic, String groupId){
-        Properties props = new Properties();
-        props.put("bootstrap.servers", hostAndPorts);
-        props.put("group.id", groupId);
-        props.put("enable.auto.commit", "true");
-        props.put("auto.commit.interval.ms", "1000");
-        props.put("session.timeout.ms", "30000");
-        props.put("auto.offset.reset", "earliest");
-        props.put("key.deserializer", StringDeserializer.class.getName());
-        props.put("value.deserializer", StringDeserializer.class.getName());
-        this.kafkaConsumer = new KafkaConsumer<String, String>(props);
-        this.kafkaConsumer.subscribe(Arrays.asList(topic));
-    }
-
-    /**
-     * 获取Kafka消费者
-     * @return Kafka消费者
-     */
-    public KafkaConsumer<String, String> getKafkaConsumer(){
-        return this.kafkaConsumer;
+    public Properties getKafkaServerProperties(String kafkaHostAndPorts, String groupId){
+        Properties properties = new Properties();
+        properties.put("bootstrap.servers", kafkaHostAndPorts);
+        properties.put("group.id", groupId);
+        properties.put("enable.auto.commit", "true");
+        properties.put("auto.commit.interval.ms", "1000");
+        properties.put("session.timeout.ms", "30000");
+        properties.put("auto.offset.reset", "earliest");
+        properties.put("key.deserializer", StringDeserializer.class.getName());
+        properties.put("value.deserializer", StringDeserializer.class.getName());
+        return properties;
     }
 
     /**

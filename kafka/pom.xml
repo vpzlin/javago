@@ -17,12 +17,6 @@
     </properties>
 
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>org.apache.kafka</groupId>-->
-<!--            <artifactId>kafka_${kafka.version.scala}</artifactId>-->
-<!--            <version>${kafka.version}</version>-->
-<!--        </dependency>-->
-
         <!-- Producer API & Consumer API & Admin API -->
         <dependency>
             <groupId>org.apache.kafka</groupId>
@@ -36,6 +30,13 @@
             <artifactId>kafka-streams</artifactId>
             <version>${kafka.version}</version>
         </dependency>
+
+        <!-- Kafka Zookeeper API -->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.kafka</groupId>-->
+<!--            <artifactId>kafka_${kafka.version.scala}</artifactId>-->
+<!--            <version>${kafka.version}</version>-->
+<!--        </dependency>-->
     </dependencies>
 
 </project>
