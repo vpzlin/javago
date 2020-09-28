@@ -163,18 +163,35 @@ public class ProducerUtil {
     }
 
     public static void main(String[] args){
-        String topic = "test_topic1";
-        ProducerUtil producerUtil = new ProducerUtil("192.168.108.110:9092");
+        // Kafka主题名
+        String topicName = "test_topic";
+        // Kafka服务器与端口，多台服务器的配置规则参照"server1:9092,server2:9092,server3:9092"
+        String kafkaHostAndPorts = "192.168.108.110:9092";
 
-//        producerUtil.createTopic(topic, 3, (short)1);
-//        for (int i = 0; i >= 0; i++){
-//            producerUtil.send(topic, "test key " + i, "test value " + i);
-//            System.out.printf("Send message: topic [%s], key [%s], value [%s]\n", topic, i, i);
-//            Thread.sleep(1000);
-//        }
-        System.out.println(producerUtil.deleteTopic(topic));
+        // 初始化生产者类
+        ProducerUtil producerUtil = new ProducerUtil(kafkaHostAndPorts);
 
+        /* 创建主题 */
+        // 分区数
+        int numPartitions = 3;
+        // 副本数（副本数不能超过Kafka节点数，如Kafka有3台，则该值最大为3）
+        short numReplica = 1;
+        // 创建主题
+        System.out.printf("主题[%s]是否创建成功：%s\n", topicName, producerUtil.createTopic(topicName, numPartitions, numReplica));
 
+        /* 存在主题 */
+        System.out.printf("主题[%s]是否存在：%s\n", topicName, producerUtil.existTopic(topicName));
+
+        /* 删除主题 */
+        System.out.printf("主题[%s]是否删除成功：%s\n", topicName, producerUtil.deleteTopic(topicName));
+
+        /* 发送消息 */
+        // 不指定消息的分区
+        producerUtil.send(topicName, "发送的key", "发送的值");
+        // 指定消息的分区为第0个分区
+        producerUtil.send(topicName, 0, "发送的key", "发送的值");
+
+        /* 关闭Kafka生产者 */
         producerUtil.closeKafkaProducer();
     }
 }
