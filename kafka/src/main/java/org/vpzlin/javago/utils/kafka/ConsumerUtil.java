@@ -1,5 +1,6 @@
 package org.vpzlin.javago.utils.kafka;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -18,9 +19,15 @@ public class ConsumerUtil {
         this.kafkaConsumer.subscribe(Arrays.asList(topicName));
     }
 
+    /**
+     * 获取Kafka服务器属性
+     * @param kafkaHostAndPorts Kafka服务器与端口，格式如： server1:9092,server2:9092
+     * @param groupId 消费组ID，一个topic的数据可被多个消费组消费，消费组之间相互独立，一个消费组可以含有多个消费者
+     * @return Kafka服务器属性
+     */
     public Properties getKafkaServerProperties(String kafkaHostAndPorts, String groupId){
         Properties properties = new Properties();
-        properties.put("bootstrap.servers", kafkaHostAndPorts);
+        properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, kafkaHostAndPorts);
         properties.put("group.id", groupId);
         properties.put("enable.auto.commit", "true");
         properties.put("auto.commit.interval.ms", "1000");
@@ -52,9 +59,13 @@ public class ConsumerUtil {
     }
 
     public static void main(String[] args){
+        // 主题
         String topic = "test_topic";
+        // 消费组
         String groupId = "test_group";
+        // 初始化消费者
         ConsumerUtil consumerUtil = new ConsumerUtil("192.168.108.110:9092", topic, groupId);
+        // 消费topic
         while (true){
             Map<String, String> data = consumerUtil.poll();
             for(Map.Entry<String, String> entry: data.entrySet()){
