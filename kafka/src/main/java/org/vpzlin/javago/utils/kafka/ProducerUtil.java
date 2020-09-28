@@ -76,8 +76,8 @@ public class ProducerUtil {
     }
 
     /**
-     * 判断索引是否存在
-     * @param topicName 索引名
+     * 判断主题是否存在
+     * @param topicName 主题名
      * @return 存在返回true，不存在或失败返回false
      */
     public boolean existTopic(String topicName){
@@ -96,7 +96,7 @@ public class ProducerUtil {
     }
 
     /**
-     * 创建索引
+     * 创建主题
      * @param topicName 主题名
      * @param numPartitions 分区数
      * @param numReplica 副本数（副本数不能超过Kafka节点数，如Kafka有3台，则该值最大为3）
