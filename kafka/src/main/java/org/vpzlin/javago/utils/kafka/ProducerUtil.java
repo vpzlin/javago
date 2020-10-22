@@ -162,7 +162,10 @@ public class ProducerUtil {
         this.kafkaProducer.close();
     }
 
-    public static void main(String[] args){
+    /**
+     * 逐步调试
+     */
+    public static void testStep(){
         // Kafka主题名
         String topicName = "test_topic";
         // Kafka服务器与端口，多台服务器的配置规则参照"server1:9092,server2:9092,server3:9092"
@@ -193,5 +196,23 @@ public class ProducerUtil {
 
         /* 关闭Kafka生产者 */
         producerUtil.closeKafkaProducer();
+    }
+
+    public static void test01() throws InterruptedException {
+        String topicName = "test_topic_producer";
+        String kafkaHostAndPorts = "192.168.108.110:9092";
+        ProducerUtil producerUtil = new ProducerUtil(kafkaHostAndPorts);
+        for(int i = 0; ; i++){
+            producerUtil.send(topicName, String.valueOf(i), String.format("%s %s %s", i, i*i, i*i*i));
+            System.out.println("send: key=[" + i + "], value=[" + String.format("%s %s %s", i, i*i, i*i*i) + "]");
+            Thread.sleep(10);
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        // 逐步调试
+//        testStep();
+
+        test01();
     }
 }

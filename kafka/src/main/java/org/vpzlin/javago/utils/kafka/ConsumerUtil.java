@@ -6,10 +6,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 public class ConsumerUtil {
     KafkaConsumer<String, String> kafkaConsumer;
@@ -49,8 +46,8 @@ public class ConsumerUtil {
      * 消费：获取消息
      * @return
      */
-    public Map<String, String> poll(){
-        HashMap<String, String> data = new HashMap<>(8);
+    public LinkedHashMap<String, String> poll(){
+        LinkedHashMap<String, String> data = new LinkedHashMap<>(8);
         for(ConsumerRecord<String, String> record: kafkaConsumer.poll(Duration.ofSeconds(1))){
             data.put(record.key(), record.value());
         }
@@ -60,14 +57,16 @@ public class ConsumerUtil {
 
     public static void main(String[] args){
         // 主题
-        String topic = "test_topic";
+        String topicName = "test_topic_producer";
+
+        topicName = "KafkaStream-app-counts-store-changelog";
         // 消费组
-        String groupId = "test_group";
+        String groupId = "group_consumer";
         // 初始化消费者
-        ConsumerUtil consumerUtil = new ConsumerUtil("192.168.108.110:9092", topic, groupId);
+        ConsumerUtil consumerUtil = new ConsumerUtil("192.168.108.110:9092", topicName, groupId);
         // 消费topic
         while (true){
-            Map<String, String> data = consumerUtil.poll();
+            LinkedHashMap<String, String> data = consumerUtil.poll();
             for(Map.Entry<String, String> entry: data.entrySet()){
                 System.out.printf("Got message: key [%s], value [%s]\n", entry.getKey(), entry.getValue());
             }
